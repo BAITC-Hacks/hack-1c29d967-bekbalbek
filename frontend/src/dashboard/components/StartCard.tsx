@@ -8,12 +8,13 @@ interface Props {
   description: string;
   hasRun: boolean;
   busy: boolean;
+  blockedReason?: string | null;
   onStart: (request: CreateRunRequest) => void;
 }
 
 const INPUT_HINT = "Edit any condition here (dates, ids, overrides) to get a different plan.";
 
-export function StartCard({ seed, description, hasRun, busy, onStart }: Props) {
+export function StartCard({ seed, description, hasRun, busy, blockedReason, onStart }: Props) {
   const [openOverride, setOpenOverride] = useState<boolean | null>(null);
   const [goal, setGoal] = useState(seed.goal);
   const [inputText, setInputText] = useState(JSON.stringify(seed.input, null, 2));
@@ -22,6 +23,7 @@ export function StartCard({ seed, description, hasRun, busy, onStart }: Props) {
   const setOpen = (value: boolean) => setOpenOverride(value);
 
   const submit = () => {
+    if (blockedReason) return;
     try {
       const input = JSON.parse(inputText) as Record<string, unknown>;
       if (typeof input !== "object" || input === null || Array.isArray(input)) throw new Error("not an object");
@@ -42,7 +44,7 @@ export function StartCard({ seed, description, hasRun, busy, onStart }: Props) {
         <span className="request-goal">{goal}</span>
         <div className="card-actions">
           <button className="btn btn-ghost" onClick={() => setOpen(true)}>Edit input</button>
-          <button className="btn btn-primary" onClick={submit} disabled={busy || goal.trim().length === 0}>{label}</button>
+          <button className="btn btn-primary" onClick={submit} disabled={busy || Boolean(blockedReason) || goal.trim().length === 0}>{label}</button>
         </div>
       </div>
     );
@@ -60,10 +62,11 @@ export function StartCard({ seed, description, hasRun, busy, onStart }: Props) {
         <textarea className="mono" value={inputText} onChange={(e) => setInputText(e.target.value)} rows={Math.min(12, inputText.split("\n").length + 1)} spellCheck={false} />
         <span className="field-h">{INPUT_HINT}</span>
       </label>
+      {blockedReason && <p className="muted">{blockedReason}</p>}
       {parseError && <p className="err">{parseError}</p>}
       <div className="card-actions">
         {hasRun && <button className="btn btn-ghost" onClick={() => setOpen(false)}>Cancel</button>}
-        <button className="btn btn-primary btn-lg" onClick={submit} disabled={busy || goal.trim().length === 0}>{label}</button>
+        <button className="btn btn-primary btn-lg" onClick={submit} disabled={busy || Boolean(blockedReason) || goal.trim().length === 0}>{label}</button>
       </div>
     </div>
   );

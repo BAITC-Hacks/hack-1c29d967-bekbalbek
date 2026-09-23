@@ -32,12 +32,12 @@ export const protokolDomain: DomainAdapter = {
   changesFor: (proposal, validation, view) => proposal.actions.filter(isActionItem).map((action) => ({
     id: action.action_id,
     rowId: String(action.source_segment_ids[0] ?? ""),
-    label: `${action.owner_speaker_id ? speakerName(view, action.owner_speaker_id) : action.owner_name} · ${action.deadline_date ?? (action.deadline_text || "срок не указан")}`,
+    label: `${action.owner_name || "не назначен"} · ${action.deadline_date ?? (action.deadline_text || "срок не указан")}`,
     field: action.urgency,
     from: "—", to: action.text,
     checks: validation.checks.filter((check) => check.action_id === action.action_id)
       .map((check) => ({ name: check.label, status: check.status, message: check.message, source: check.source })),
-    why: action.deadline_text ? `Срок из речи: «${action.deadline_text}»` : "Срок в речи не назван",
+    why: [action.deadline_text ? `Срок из речи: «${action.deadline_text}»` : "Срок в речи не назван", action.owner_speaker_id ? `Поручил: ${speakerName(view, action.owner_speaker_id)}` : ""].filter(Boolean).join(" · "),
     evidence: action.source_segment_ids.map((id) => ({ kind: "record" as const, ref: `segment:${id}`, note: null })),
   })),
   beforeAfter: (beforeRaw, afterRaw) => {

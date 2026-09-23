@@ -28,7 +28,7 @@ export function createFakeApi(options: FakeApiOptions = {}) {
       throw new ApiError("not_found", `No fake route for ${path}`, 404);
     },
     health: async () => ({ status: "ok", database: "ok", model: "scripted:auto", api_key_configured: false, domain: { key: "protokol", title: "Протокол совещания" }, active_runs: 0, version: "0.1.0", provenance: { enabled: true, blocked_external_connections: 0 }, llm_endpoint: "http://localhost:11434/v1", stt_device: "cuda", models_present: true }),
-    examples: async () => options.examples ?? examples,
+    examples: async () => structuredClone(options.examples ?? examples),
     caseView: async (ref) => ({ ...view, case_ref: ref, meeting: { ...view.meeting, id: ref } }),
     resetSampleData: async () => { calls.reset += 1; return { status: "ok", seeded: { meetings: 2 } }; },
     listRuns: async () => options.runs ?? Object.values(details).map((d) => d.run),

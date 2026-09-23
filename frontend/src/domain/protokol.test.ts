@@ -18,6 +18,12 @@ describe("meeting domain mapping", () => {
     expect(changes[1].evidence[0].ref).toBe("segment:104");
     expect(changes[2].label).toBe("не назначен · срок не указан");
   });
+  it("should keep the assignee distinct from the speaker who gave the instruction", () => {
+    const content = { ...proposalRecord.content, actions: [{ ...proposalRecord.content.actions[0], owner_name: "Ерлан", owner_speaker_id: "S1" }] };
+    const change = protokolDomain.changesFor(content, proposalRecord.validation, caseView)[0];
+    expect(change.label).toBe("Ерлан · 2026-09-25");
+    expect(change.why).toContain("Поручил: Председатель");
+  });
   it("should return the cited transcript quote with its timestamp", () => {
     expect(protokolDomain.describeEvidence({ kind: "record", ref: "segment:102", note: null }, caseView)).toEqual({
       title: "Айдос Б. · 00:07", source: "реплика №2", snippet: caseView.segments[1].text,

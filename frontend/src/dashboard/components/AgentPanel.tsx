@@ -17,6 +17,7 @@ interface Props {
   changes: ChangeRow[];
   validation: ValidationReport | null;
   proposalStatus: ProposalStatus | null;
+  proposalKey: string;
   selected: string | null;
   onSelect: (id: string | null) => void;
   caseView: CaseView | null;
@@ -28,7 +29,7 @@ interface Props {
   demoControls?: ReactNode;
 }
 
-export function AgentPanel({ phase, steps, connection, changes, validation, proposalStatus, selected, onSelect, caseView, domain, applying, onApply, open, onToggle, demoControls }: Props) {
+export function AgentPanel({ phase, steps, connection, changes, validation, proposalStatus, proposalKey, selected, onSelect, caseView, domain, applying, onApply, open, onToggle, demoControls }: Props) {
   if (!open) {
     return <aside className="right rail"><button className="btn btn-ghost" onClick={onToggle} aria-label="Open agent panel">‹</button></aside>;
   }
@@ -41,7 +42,7 @@ export function AgentPanel({ phase, steps, connection, changes, validation, prop
         <ChangeList changes={changes} selected={selected} onSelect={onSelect} />
         {selectedChange && <EvidenceDrawer change={selectedChange} caseView={caseView} domain={domain} onClose={() => onSelect(null)} />}
       </div>
-      <ApplyPanel phase={phase} validation={validation} proposalStatus={proposalStatus} changeCount={changes.length} busy={applying} onApply={onApply} extra={demoControls} />
+      <ApplyPanel key={proposalKey} phase={phase} validation={validation} proposalStatus={proposalStatus} changeCount={changes.length} busy={applying} onApply={onApply} extra={demoControls} />
     </aside>
   );
 }

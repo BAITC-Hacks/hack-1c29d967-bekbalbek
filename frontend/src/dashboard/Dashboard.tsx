@@ -41,6 +41,7 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   const [panelOpen, setPanelOpen] = useState(true);
   const [changeSelection, setChangeSelection] = useState<{ runId: string; changeId: string } | null>(null);
   const requestedRunId = useRef<string | null>(null);
+  const caseRequest = useRef(0);
 
   const notify = useCallback((message: string) => {
     setToast(message);
@@ -53,7 +54,11 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   );
 
   const loadCaseView = useCallback(
-    (ref: string) => api.caseView(ref).then(setCaseView).catch((error: unknown) => notify(`Could not load case ${ref}: ${describe(error)}`)),
+    (ref: string) => {
+      const requestId = ++caseRequest.current;
+      return api.caseView(ref).then((result) => { if (requestId === caseRequest.current) setCaseView(result); })
+        .catch((error: unknown) => { if (requestId === caseRequest.current) notify(`Не удалось загрузить совещание: ${describe(error)}`); });
+    },
     [api, notify],
   );
 
@@ -104,13 +109,19 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
     [runs, example, examples, caseRef],
   );
 
+  const refreshMeeting = useCallback(() => {
+    void api.examples().then(setExamples).catch((error: unknown) => notify(`Не удалось обновить список: ${describe(error)}`));
+    if (caseRef) void loadCaseView(caseRef);
+  }, [api, caseRef, loadCaseView, notify]);
+
   const startRun = useCallback(async (request: CreateRunRequest) => {
+    if (view?.meeting.status !== "ready") { notify("Сначала дождитесь готовности стенограммы"); return; }
     const run = await start(request);
     if (!run) return;
     requestedRunId.current = run.id;
     navigate({ kind: "run", id: run.id });
     void loadRuns();
-  }, [start, navigate, loadRuns]);
+  }, [start, navigate, loadRuns, view, notify]);
 
   const rerunSameRequest = useCallback(() => {
     if (detail) void startRun({ case_ref: detail.run.case_ref, goal: detail.run.goal, input: detail.run.input });
@@ -123,6 +134,8 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
       notify("Sample data reset");
       navigate({ kind: "none" });
       await loadRuns();
+      await api.examples().then(setExamples);
+      setCaseView(null);
     } catch (error) {
       notify(`Reset failed: ${describe(error)}`);
     } finally {
@@ -144,12 +157,15 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
       <div className="cols">
         <CaseList examples={examples} runs={runs} activeExampleId={example?.id ?? null} activeRunId={detail?.run.id ?? null}
           onPickExample={(picked) => navigate({ kind: "example", id: picked.id })} onPickRun={(id) => navigate({ kind: "run", id })} />
-        {seed ? (
-          <div className="center-col">
+        <div className="center-col">
+          {DemoPanel && <DemoPanel api={api} caseView={view} onChanged={refreshMeeting} />}
+          {seed ? (
+          <>
             <CaseHeader title={title} summary={summary} caseRef={caseRef ?? ""} phase={phase} outcome={detail?.run.outcome ?? null} model={detail?.run.model ?? null}
               history={history} activeRunId={detail?.run.id ?? null} onPickRun={(id) => navigate({ kind: "run", id })} />
             <Workspace
               seed={seed}
+              startBlockedReason={view?.meeting.status === "ready" ? null : "Сначала транскрибируйте запись и дождитесь готовности стенограммы."}
               description={example?.description ?? ""}
               detail={detail}
               phase={phase}
@@ -167,11 +183,13 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
               onRerun={rerunSameRequest}
               domain={domain}
             />
-          </div>
+          </>
         ) : (
-          <main className="center"><div className="empty"><div><h2>Pick a case</h2><p>Choose a case on the left to run the agent, or open a previous run to review it.</p></div></div></main>
+          <main className="center"><div className="empty"><div><h2>Начните с записи совещания</h2><p>Загрузите файл выше или выберите совещание слева.</p></div></div></main>
         )}
+        </div>
         <AgentPanel
+          proposalKey={`${detail?.run.id ?? "none"}:${proposal?.id ?? "none"}:${proposal?.version ?? 0}`}
           phase={phase}
           steps={timeline.steps}
           connection={controller.connection}
@@ -183,10 +201,9 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
           caseView={view}
           domain={domain}
           applying={controller.busy === "applying"}
-          onApply={() => { void controller.apply().then(loadRuns); }}
+          onApply={() => { void controller.apply().then(() => { void loadRuns(); refreshMeeting(); }); }}
           open={panelOpen}
           onToggle={() => setPanelOpen((o) => !o)}
-          demoControls={detail && phase === "proposed" && DemoPanel ? <DemoPanel api={api} caseView={view} onChanged={() => { if (caseRef) void loadCaseView(caseRef); }} /> : undefined}
         />
       </div>
     </div>

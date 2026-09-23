@@ -1,11 +1,13 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ApiError } from "../api/client";
 import { protokolDomain } from "../domain/protokol";
 import { createFakeApi } from "../test/fakeApi";
 import { FakeEventSource, fakeEventSourceFactory } from "../test/fakeEventSource";
-import { applyEvents, happyEvents, infeasibleDetail, makeRun, needsInputDetail } from "../test/fixtures";
+import { caseView, examples, applyEvents, happyEvents, infeasibleDetail, makeRun, needsInputDetail } from "../test/fixtures";
 import Dashboard from "./Dashboard";
+
+afterEach(() => vi.unstubAllGlobals());
 
 beforeEach(() => { FakeEventSource.reset(); window.location.hash = "#/app"; });
 
@@ -16,6 +18,28 @@ function renderDashboard(options: Parameters<typeof createFakeApi>[0] = {}) {
 }
 
 describe("Dashboard", () => {
+  it("should expose upload on the empty dashboard and refresh the new meeting without reloading", async () => {
+    const user = userEvent.setup();
+    const meetings = [] as typeof examples;
+    const uploaded = { ...caseView, status: "uploaded" as const, meeting: { ...caseView.meeting, status: "uploaded" as const } };
+    const fake = renderDashboard({ examples: meetings, runs: [], caseView: uploaded });
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      meetings.push({ ...examples[0], id: "m-new", title: "Новая встреча", request: { ...examples[0].request, case_ref: "m-new" } });
+      return new Response(JSON.stringify({ meeting: { ...uploaded.meeting, id: "m-new" } }), { status: 202 });
+    }));
+    await user.upload(screen.getByLabelText("Аудио или видео"), new File(["audio"], "new.mp3", { type: "audio/mpeg" }));
+    // jsdom keeps the native file-input validity empty after userEvent.upload.
+    fireEvent.submit(screen.getByRole("button", { name: "Загрузить" }).closest("form")!);
+    expect(await screen.findByRole("button", { name: /Новая встреча/ })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Транскрибировать" }));
+    expect(fake.calls.request[0].path).toBe("/domain/meetings/m-new/transcribe");
+  });
+  it("should prevent protocol generation until the transcript is ready", async () => {
+    const user = userEvent.setup();
+    renderDashboard({ runs: [], caseView: { ...caseView, status: "uploaded", meeting: { ...caseView.meeting, status: "uploaded" } } });
+    await user.click(await screen.findByText("Развитие химической промышленности и ТБ"));
+    expect(await screen.findByRole("button", { name: /run analysis/i })).toBeDisabled();
+  });
   it("should list examples and previous runs in the left panel", async () => {
     renderDashboard();
     expect(await screen.findByText("Развитие химической промышленности и ТБ")).toBeInTheDocument();
@@ -43,6 +67,8 @@ describe("Dashboard", () => {
     act(() => FakeEventSource.last().emitAll(applyEvents));
     expect(await screen.findByText(/applied and verified/i)).toBeInTheDocument();
     expect(await screen.findByText(/Before → after/i)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Скачать PDF" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Скачать DOCX" })).toBeInTheDocument();
   });
 
   it("should show the missing fields as a form and continue with the supplied values", async () => {

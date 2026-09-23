@@ -13,6 +13,7 @@ export const REJECTION_CODES = new Set(["stale_proposal", "duplicate_apply", "in
 
 interface Props {
   seed: RunSeed | null;
+  startBlockedReason?: string | null;
   description: string;
   detail: RunDetail | null;
   phase: Phase;
@@ -55,7 +56,7 @@ export function Workspace(p: Props) {
         </div>
       )}
       {rejection && <RejectionCard error={rejection} onRerun={p.onRerun} />}
-      {seed && <StartCard key={`${seed.case_ref}|${seed.goal}|${JSON.stringify(seed.input)}`} seed={seed} description={p.description} hasRun={Boolean(detail)} busy={p.busy !== null} onStart={p.onStart} />}
+      {seed && <StartCard key={`${seed.case_ref}|${seed.goal}|${JSON.stringify(seed.input)}`} seed={seed} blockedReason={p.startBlockedReason} description={p.description} hasRun={Boolean(detail)} busy={p.busy !== null} onStart={p.onStart} />}
       {detail && phase === "needs_input" && detail.needs_input && (
         <NeedsInputForm message={detail.needs_input.message} fields={detail.needs_input.missing_fields} input={detail.run.input} domain={p.domain} onContinue={p.onContinue} busy={p.busy !== null} />
       )}
