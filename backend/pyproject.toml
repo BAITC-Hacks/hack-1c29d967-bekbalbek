@@ -16,6 +16,7 @@ dependencies = [
     "faster-whisper==1.2.1",
     "ctranslate2==4.8.2",
     "sherpa-onnx==1.13.8",
+    "sherpa-onnx-core==1.13.8",
     "onnxruntime==1.30.0",
     "reportlab==5.0.1",
     "python-docx==1.2.0",
@@ -38,6 +39,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
+markers = ["models: needs model weights on disk"]
 
 [tool.ruff]
 line-length = 120
