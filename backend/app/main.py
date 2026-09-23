@@ -64,7 +64,7 @@ def create_app(
             await dispose_engine()
 
     app = FastAPI(title="Agent workspace", version=settings.app_version, lifespan=lifespan)
-    app.add_middleware(BodySizeLimitMiddleware)
+    app.add_middleware(BodySizeLimitMiddleware, exempt_prefixes=("/api/domain/meetings",))
     app.add_middleware(
         CORSMiddleware, allow_origins=settings.cors_origin_list, allow_methods=["*"], allow_headers=["*"]
     )
