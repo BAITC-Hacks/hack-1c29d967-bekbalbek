@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16
+    container_name: agent-workspace-db
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent
+      POSTGRES_DB: agent_workspace
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent_workspace"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  api:
+    build: ./backend
+    container_name: agent-workspace-api
+    profiles: ["app"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://agent:agent@db:5432/agent_workspace
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-scripted:auto}
+      CORS_ORIGINS: http://localhost:8080
+      SEED_ON_START: ${SEED_ON_START:-1}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./frontend
+    container_name: agent-workspace-web
+    profiles: ["app"]
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

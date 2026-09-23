@@ -1,0 +1,17 @@
+# env
+.env
+*.local
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+backend/evals/results/*.json
+
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/
