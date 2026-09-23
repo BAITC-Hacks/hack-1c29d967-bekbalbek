@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "reference_origin": "Organizer-provided DOCX task summary tables; evaluation annotations added by the team.",
+  "source_audio_alignment_verified": false,
+  "samples": [
+    {
+      "id": "meeting_1",
+      "title": "Развитие химической промышленности и техника безопасности",
+      "meeting_date": null,
+      "document_language": "ru",
+      "speakers_in_document": [
+        "Асхат Ерланович",
+        "Гульмира Сериковна",
+        "Тимур Болатович",
+        "Айнур Каировна",
+        "Нурлан Сагатович"
+      ],
+      "sources": {
+        "protocol": {
+          "filename": "Протокол_совещания№1.docx",
+          "size_bytes": 12894,
+          "sha256": "c2f5210106b96317730a06f71c29990f3876f70533b6c8671b30d04396a856e2"
+        },
+        "audio": {
+          "filename": "Совещание №1.mp3",
+          "size_bytes": 4426407,
+          "sha256": "0f18f11a6f65f9a2bad6497f387b224c775885a03a811edf3fb15c5238db6f54",
+          "estimated_duration_seconds": 274.296,
+          "sample_rate_hz": 48000,
+          "channels": 1,
+          "metadata_tool": "macOS afinfo"
+        }
+      },
+      "actions": [
+        {
+          "id": "M1-A01",
+          "task": "Разработать единую стратегию закупа сырья",
+          "owner": "Гульмира Сериковна",
+          "due_text": "15 октября",
+          "deadline_kind": "month_day",
+          "due_date": null,
+          "source_table": 1,
+          "source_row": 2
+        },
+        {
+          "id": "M1-A02",
+          "task": "Согласовать график поставок с проектным институтом",
+          "owner": "Айнур Каировна",
+          "due_text": "26 сентября",
+          "deadline_kind": "month_day",
+          "due_date": null,
+          "source_table": 1,
+          "source_row": 3
+        },
+        {
+          "id": "M1-A03",
+          "task": "Подготовить финансовое решение по Павлодарскому заводу",
+          "owner": "Тимур Болатович",
+          "due_text": "30 сентября",
+          "deadline_kind": "month_day",
+          "due_date": null,
+          "source_table": 1,
+          "source_row": 4
+        },
+        {
+          "id": "M1-A04",
+          "task": "Юридическая проверка штрафных санкций по контракту",
+          "owner": "Юридический департамент",
+          "due_text": "30 сентября",
+          "deadline_kind": "month_day",
+          "due_date": null,
+          "source_table": 1,
+          "source_row": 5
+        },
+        {
+          "id": "M1-A05",
+          "task": "Сводный отчёт на следующем совещании",
+          "owner": "Гульмира Сериковна",
+          "due_text": "20 октября",
+          "deadline_kind": "month_day",
+          "due_date": null,
+          "source_table": 1,
+          "source_row": 6
+        },
+        {
+          "id": "M1-A06",
+          "task": "Разобраться с подрядчиком-нарушителем, доложить лично",
+          "owner": "Гульмира Сериковна",
+          "due_text": "Пятница",
+          "deadline_kind": "weekday",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 2
+        },
+        {
+          "id": "M1-A07",
+          "task": "Полный аудит датчиков и СИЗ на 11 площадках",
+          "owner": "Нурлан Сагатович",
+          "due_text": "15 октября",
+          "deadline_kind": "month_day",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 3
+        },
+        {
+          "id": "M1-A08",
+          "task": "Внеплановый инструктаж по газоопасным работам",
+          "owner": "Нурлан Сагатович",
+          "due_text": "Следующая неделя",
+          "deadline_kind": "week_window",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 4
+        },
+        {
+          "id": "M1-A09",
+          "task": "Согласовать бюджет безопасности с инвестпланом",
+          "owner": "Тимур Болатович",
+          "due_text": "Текущая неделя",
+          "deadline_kind": "week_window",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 5
+        },
+        {
+          "id": "M1-A10",
+          "task": "Заключение юристов по претензии к подрядчику",
+          "owner": "Айнур Каировна",
+          "due_text": "Среда",
+          "deadline_kind": "weekday",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 6
+        }
+      ]
+    },
+    {
+      "id": "meeting_2",
+      "title": "Доклады по производственным показателям направлений",
+      "meeting_date": null,
+      "document_language": "ru",
+      "speakers_in_document": [
+        "Данияр Серикович",
+        "Ботагоз Нурлановна",
+        "Жандос Талгатович",
+        "Ерболат Мухтарович",
+        "Салтанат Ерболовна"
+      ],
+      "sources": {
+        "protocol": {
+          "filename": "Протокол_совещания№2.docx",
+          "size_bytes": 12467,
+          "sha256": "0bcee5d2fdbed172beaaa758627bb78dd0b523ab48789833e949e62da61dfdb5"
+        },
+        "audio": {
+          "filename": "Совещание №2.mp3",
+          "size_bytes": 3334695,
+          "sha256": "b7a42833d0691b99af300a24c7dcdeaf05378355633fb867ef6bfc9e2a8f8f46",
+          "estimated_duration_seconds": 206.064,
+          "sample_rate_hz": 48000,
+          "channels": 1,
+          "metadata_tool": "macOS afinfo"
+        }
+      },
+      "actions": [
+        {
+          "id": "M2-A01",
+          "task": "Подготовить претензию поставщику за срыв сроков",
+          "owner": "Ерлан (юрист департамента)",
+          "due_text": "До конца недели",
+          "deadline_kind": "week_window",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 2
+        },
+        {
+          "id": "M2-A02",
+          "task": "Найти альтернативного поставщика сырья (расчёт)",
+          "owner": "Ботагоз Нурлановна",
+          "due_text": "2 недели",
+          "deadline_kind": "relative_duration",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 3
+        },
+        {
+          "id": "M2-A03",
+          "task": "Провести совещание с подрядчиками, зафиксировать график с контрольными точками",
+          "owner": "Жандос Талгатович",
+          "due_text": "Текущая неделя",
+          "deadline_kind": "week_window",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 4
+        },
+        {
+          "id": "M2-A04",
+          "task": "Предоставить справку по итогам совещания с подрядчиками",
+          "owner": "Жандос Талгатович",
+          "due_text": "После совещания с подрядчиками",
+          "deadline_kind": "after_event",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 5
+        },
+        {
+          "id": "M2-A05",
+          "task": "Организовать доп. группы / привлечь внешнего тренера, подготовить смету",
+          "owner": "Ерболат Мухтарович",
+          "due_text": "1 неделя (смета)",
+          "deadline_kind": "relative_duration",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 6
+        },
+        {
+          "id": "M2-A06",
+          "task": "Подготовить уведомление подрядчикам и обновить шаблон договора",
+          "owner": "Салтанат Ерболовна",
+          "due_text": "Не указан",
+          "deadline_kind": "unspecified",
+          "due_date": null,
+          "source_table": 2,
+          "source_row": 7
+        }
+      ]
+    }
+  ]
+}
