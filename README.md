@@ -16,6 +16,20 @@
 
 Пути `app/` и `tests/` в таблице относятся к `backend/`. Статусы поручений в интерфейсе сохраняются только в текущем браузере и не изменяют PDF/DOCX.
 
+### Скриншоты
+
+01 — Подтверждённый протокол с кнопками экспорта PDF и DOCX.
+
+![Подтверждённый протокол и экспорт](docs/screenshots/01-protocol-confirmed.png)
+
+02 — Стенограмма с подтверждающими фрагментами и шагами агента.
+
+![Стенограмма, подтверждения и шаги агента](docs/screenshots/02-transcript-evidence-timeline.png)
+
+03 — Доска статусов поручений с индикатором локальной работы и сетевой защиты.
+
+![Статусы поручений и индикатор локальной работы](docs/screenshots/03-status-board.png)
+
 ## Как это работает
 
 ```text
@@ -123,7 +137,7 @@ API=http://localhost:8080 make smoke
 
 ### Затем: живая модель
 
-Выполните `make llm`, запустите dev API с `OPENAI_MODEL=protokol-qwen3.5:4b`, проверьте `/api/health` на порту 8000 и повторите шаги в интерфейсе на 5173. CLI: `API=http://localhost:8000 make smoke`. Проверенный Qwen-прогон записи №1 сформировал 11 строк за 30,5 секунды после готовой стенограммы. Сохранены оба состояния одного запуска: [JSON предложения](evaluation/organizer/qwen-live-verified.json) содержит `detail.run.status = proposed` (имя файла не означает подтверждение), а [полный RunDetail после подтверждения](evaluation/organizer/results/qwen-live-confirmed.json), повторно полученный через API после восстановления исходной БД, содержит `run.status = verified`, `application.status = verified` и проверки сохранения в `application.verification`. Предложение используется для оценки извлечения; второй файл подтверждает применение. Экспорт дополнительно проверен в Docker-сценарии выше. Число строк может меняться при новом запуске.
+Выполните `make llm`, запустите dev API с `OPENAI_MODEL=protokol-qwen3.5:4b`, проверьте `/api/health` на порту 8000 и повторите шаги в интерфейсе на 5173. CLI: `API=http://localhost:8000 make smoke`. Проверенный Qwen-прогон записи №1 сформировал 11 строк за 30,5 секунды после готовой стенограммы. Сохранены оба состояния одного запуска: [JSON предложения](evaluation/organizer/qwen-live-verified.json) содержит `detail.run.status = proposed` (имя файла не означает подтверждение), а [полный RunDetail после подтверждения](evaluation/organizer/results/qwen-live-confirmed.json), повторно полученный через API после восстановления исходной БД, содержит `run.status = verified`, `application.status = verified` и проверки сохранения в `application.verification`. Предложение используется для оценки извлечения; второй файл подтверждает применение. Файлы этого подтверждённого запуска: [PDF](evaluation/organizer/results/qwen-live-protocol.pdf) и [DOCX](evaluation/organizer/results/qwen-live-protocol.docx). Экспорт дополнительно проверен в Docker-сценарии выше. Число строк может меняться при новом запуске.
 
 Ручная оценка двух организаторских записей: **10/10 и 6/6 групп поручений имеют соответствие**, создано **11 и 8 строк**. Это покрытие групп, не «100% точность»: ошибки перечислены в [accuracy-summary.md](evaluation/organizer/accuracy-summary.md).
 
