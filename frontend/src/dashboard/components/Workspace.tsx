@@ -52,7 +52,7 @@ export function Workspace(p: Props) {
       {otherError && (
         <div className="banner banner-bad" role="alert">
           <span>{otherError.code}: {otherError.message}</span>
-          <button className="btn btn-ghost" onClick={p.onClearError}>Dismiss</button>
+          <button className="btn btn-ghost" onClick={p.onClearError}>Закрыть</button>
         </div>
       )}
       {rejection && <RejectionCard error={rejection} onRerun={p.onRerun} />}
@@ -64,8 +64,8 @@ export function Workspace(p: Props) {
       {detail && phase === "validation_failed" && <ValidationFailedCard errors={lastProposal?.validation.errors ?? []} onRerun={p.onRerun} />}
       {detail && (phase === "failed" || phase === "interrupted") && (
         <FailedCard
-          error={p.runError ?? { code: phase, message: phase === "interrupted" ? "The server restarted while this run was in progress." : "The run failed." }}
-          label={phase === "interrupted" ? "Interrupted" : "Run failed"}
+          error={p.runError ?? { code: phase, message: phase === "interrupted" ? "Сервер перезапустился во время анализа." : "Анализ завершился ошибкой." }}
+          label={phase === "interrupted" ? "Прервано" : "Ошибка анализа"}
           onRetry={p.onRerun}
           details={p.runError ? JSON.stringify(p.runError, null, 2) : undefined}
         />

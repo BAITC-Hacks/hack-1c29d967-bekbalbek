@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Phase } from "../model/phase";
 import { phaseChip } from "../model/phase";
 import type { ChangeRow, Table } from "../model/changes";
@@ -16,6 +16,8 @@ const MAX_STAGGER_MS = 320;
 const OVERLAY_PHASES: Phase[] = ["proposed", "applying", "applied", "verified", "validation_failed"];
 
 export function ChangesTable({ table, changes, phase, selected, onSelect }: Props) {
+  const selectedRow = useRef<HTMLTableRowElement>(null);
+  useEffect(() => { if (selected) selectedRow.current?.scrollIntoView?.({ block: "nearest", behavior: "auto" }); }, [selected]);
   const byRow = useMemo(() => {
     const map = new Map<string, ChangeRow[]>();
     changes.forEach((change) => map.set(change.rowId, [...(map.get(change.rowId) ?? []), change]));
@@ -34,6 +36,9 @@ export function ChangesTable({ table, changes, phase, selected, onSelect }: Prop
           return (
             <tr
               key={row.id}
+              ref={isSelected ? selectedRow : undefined}
+              tabIndex={rowChanges ? 0 : undefined}
+              onKeyDown={(event) => { if (rowChanges && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onSelect(isSelected ? null : rowChanges[0].id); } }}
               className={`${rowChanges ? `changed ${rowPhase}` : ""} ${isSelected ? "sel" : ""}`}
               style={{ animationDelay: `${Math.min(index * STAGGER_MS, MAX_STAGGER_MS)}ms` }}
               onClick={() => rowChanges && onSelect(isSelected ? null : rowChanges[0].id)}

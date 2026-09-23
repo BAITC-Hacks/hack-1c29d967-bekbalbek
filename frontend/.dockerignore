@@ -5,3 +5,5 @@ e2e/results
 e2e/screenshots
 screenshots
 .env*
+test-results
+playwright-report

@@ -18,12 +18,12 @@ describe("NeedsInputForm", () => {
     );
     await user.type(screen.getByLabelText("meeting_date"), "2026-09-23");
     await user.type(screen.getByLabelText("language"), "ru");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /продолжить/i }));
     expect(onContinue).toHaveBeenCalledWith({ notes: "keep", meeting_date: "2026-09-23", language: "ru" });
   });
 
   it("should keep continue disabled until every field has a value", () => {
     render(<NeedsInputForm message="m" fields={[{ field: "meeting_date", reason: "r" }]} input={{}} domain={protokolDomain} onContinue={vi.fn()} />);
-    expect(screen.getByRole("button", { name: /continue/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /продолжить/i })).toBeDisabled();
   });
 });

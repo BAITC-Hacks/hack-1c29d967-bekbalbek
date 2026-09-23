@@ -16,7 +16,7 @@ describe("timeline reducer", () => {
   it("should keep a retried tool running with the retry reason and finish on the second attempt", () => {
     const afterFailure = run(happyEvents.slice(0, 5));
     expect(afterFailure.steps.find((s) => s.id === "c2")?.state).toBe("running");
-    expect(afterFailure.steps.find((s) => s.id === "c2")?.detail).toMatch(/retry/i);
+    expect(afterFailure.steps.find((s) => s.id === "c2")?.detail).toMatch(/повтор/i);
     const afterRetry = run(happyEvents.slice(0, 6));
     const step = afterRetry.steps.find((s) => s.id === "c2");
     expect(step?.state).toBe("done");
@@ -35,7 +35,7 @@ describe("timeline reducer", () => {
   it("should add milestones for agent output, proposal, apply and verification", () => {
     const state = run([...happyEvents, ...applyEvents]);
     const labels = state.steps.filter((s) => s.kind === "milestone").map((s) => s.label);
-    expect(labels).toEqual(expect.arrayContaining([expect.stringMatching(/Proposal ready/), expect.stringMatching(/Applying/), expect.stringMatching(/Verified/)]));
+    expect(labels).toEqual(expect.arrayContaining([expect.stringMatching(/Протокол готов/), expect.stringMatching(/Сохраняем/), expect.stringMatching(/Подтверждено/)]));
     expect(state.status).toBe("verified");
     expect(state.stats?.tool_calls).toBe(2);
   });
@@ -62,6 +62,6 @@ describe("timeline reducer", () => {
     const state = events.reduce(reduceTimeline, initialTimeline);
     expect(state.steps[0].tone).toBe("bad");
     expect(state.steps[0].detail).toContain("skill_match");
-    expect(state.steps[1].label).toMatch(/Revis/);
+    expect(state.steps[1].label).toMatch(/Исправление/);
   });
 });

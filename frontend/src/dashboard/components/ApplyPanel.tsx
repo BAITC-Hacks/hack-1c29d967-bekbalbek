@@ -21,30 +21,30 @@ export function ApplyPanel({ phase, validation, proposalStatus, changeCount, bus
 
   return (
     <div className="apply">
-      {phase === "idle" && <p className="muted small">Pick an example and run the analysis to get a proposal.</p>}
-      {phase === "analyzing" && <button className="btn wide" disabled><span className="spinner" /> Analyzing…</button>}
-      {phase === "proposed" && !validation && <button className="btn wide" disabled><span className="spinner" /> Loading proposal…</button>}
+      {phase === "idle" && <p className="muted small">Выберите совещание и сформируйте проект протокола.</p>}
+      {phase === "analyzing" && <button className="btn wide" disabled><span className="spinner" /> Анализируем…</button>}
+      {phase === "proposed" && !validation && <button className="btn wide" disabled><span className="spinner" /> Загружаем проект…</button>}
       {phase === "proposed" && validation && proposalStatus && proposalStatus !== "validated" && (
-        <button className="btn wide" disabled>Proposal {proposalStatus} — run the analysis again</button>
+        <button className="btn wide" disabled>Проект недоступен для подтверждения — повторите анализ</button>
       )}
       {phase === "proposed" && validation && (!proposalStatus || proposalStatus === "validated") && (
         <>
-          <div className="apply-sum">{changeCount} change{changeCount === 1 ? "" : "s"} · {passes} checks passed{warnings > 0 && ` · ${warnings} warning${warnings === 1 ? "" : "s"}`}{failures > 0 && ` · ${failures} failing`}</div>
+          <div className="apply-sum">Поручений: {changeCount} · проверок пройдено: {passes}{warnings > 0 && ` · предупреждений: ${warnings}`}{failures > 0 && ` · ошибок: ${failures}`}</div>
           {warnings > 0 && failures === 0 && (
-            <label className="ack"><input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} /> I reviewed the warning{warnings === 1 ? "" : "s"}</label>
+            <label className="ack"><input type="checkbox" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} /> Я проверил предупреждения</label>
           )}
           {gate.reason && !gate.enabled && warnings === 0 && <p className="muted small">{gate.reason}</p>}
           <div className="apply-row">
-            <button className="btn btn-primary wide" disabled={!gate.enabled || busy} onClick={onApply}>{busy ? <><span className="spinner" /> Applying…</> : "Apply proposal"}</button>
+            <button className="btn btn-primary wide" disabled={!gate.enabled || busy} onClick={onApply}>{busy ? <><span className="spinner" /> Сохраняем…</> : "Подтвердить протокол"}</button>
           </div>
           {extra}
         </>
       )}
-      {phase === "applying" && <button className="btn wide" disabled><span className="spinner" /> Applying…</button>}
-      {phase === "applied" && <button className="btn wide" disabled><span className="spinner" /> Applied — verifying</button>}
-      {phase === "verified" && <button className="btn wide chip-verified" disabled>✓ Verified</button>}
+      {phase === "applying" && <button className="btn wide" disabled><span className="spinner" /> Сохраняем…</button>}
+      {phase === "applied" && <button className="btn wide" disabled><span className="spinner" /> Сохранено — проверяем</button>}
+      {phase === "verified" && <button className="btn wide chip-verified" disabled>✓ Подтверждён</button>}
       {["needs_input", "infeasible", "validation_failed", "failed", "interrupted"].includes(phase) && (
-        <p className="muted small">Nothing to apply. Adjust the request above and run the analysis again.</p>
+        <p className="muted small">Подтверждение недоступно. Проверьте данные и повторите анализ.</p>
       )}
     </div>
   );

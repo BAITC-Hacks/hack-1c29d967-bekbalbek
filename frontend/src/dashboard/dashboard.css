@@ -200,3 +200,24 @@
 .cell-diff { display: inline-flex; flex-wrap: wrap; gap: 4px 8px; }
 .cell-diff s, .cell-diff b { white-space: nowrap; }
 .tbl td:first-child .chip.mini { display: block; width: fit-content; margin: 4px 0 0; }
+
+/* The meeting panel and transcript share one scrollable work area. */
+.center-col { overflow-y: auto; }
+.center-col > .meeting-panel, .center-col > .case-h, .center-col > .center { flex: 0 0 auto; }
+.center-col > .case-h { padding: 20px 24px 0; margin: 0; }
+.center-col > .center { overflow: visible; }
+.top { height: auto; min-height: 56px; flex-shrink: 0; padding-top: 8px; padding-bottom: 8px; flex-wrap: wrap; }
+.top-health { flex-wrap: wrap; gap: 6px; }
+.field select { padding: 9px 10px; background: var(--bg-surface); border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: inherit; color: var(--text-primary); }
+@media (max-width: 900px) {
+  .dash { height: auto; min-height: 100%; }
+  .cols { display: flex; flex-direction: column; overflow: visible; }
+  .left { display: block; max-height: 210px; border-right: 0; border-bottom: 1px solid var(--border); }
+  .right, .right.rail { display: flex; width: 100%; max-height: none; border-top: 1px solid var(--border); }
+  .right-body { overflow: visible; }
+  .center-col { overflow: visible; }
+  .top-health { width: 100%; order: 3; margin: 0; }
+  .top-actions { flex-wrap: wrap; }
+  .stepper { flex-wrap: wrap; margin-left: 0; }
+  .stepper li + li::before { width: 10px; margin: 0 4px; }
+}

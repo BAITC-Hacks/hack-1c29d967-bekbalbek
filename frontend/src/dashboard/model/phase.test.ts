@@ -36,7 +36,7 @@ describe("phase model", () => {
     expect(applyGate({ phase: "proposed", validationOk: true, warnings: 0, acknowledged: false })).toEqual({ enabled: true, reason: null });
     expect(applyGate({ phase: "proposed", validationOk: true, warnings: 1, acknowledged: false }).enabled).toBe(false);
     expect(applyGate({ phase: "proposed", validationOk: true, warnings: 1, acknowledged: true }).enabled).toBe(true);
-    expect(applyGate({ phase: "proposed", validationOk: false, warnings: 0, acknowledged: true }).reason).toMatch(/failing/);
+    expect(applyGate({ phase: "proposed", validationOk: false, warnings: 0, acknowledged: true }).reason).toMatch(/ошибки/);
     expect(applyGate({ phase: "analyzing", validationOk: true, warnings: 0, acknowledged: true }).enabled).toBe(false);
   });
 });

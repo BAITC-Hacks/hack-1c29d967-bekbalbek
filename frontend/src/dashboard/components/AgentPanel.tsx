@@ -31,12 +31,12 @@ interface Props {
 
 export function AgentPanel({ phase, steps, connection, changes, validation, proposalStatus, proposalKey, selected, onSelect, caseView, domain, applying, onApply, open, onToggle, demoControls }: Props) {
   if (!open) {
-    return <aside className="right rail"><button className="btn btn-ghost" onClick={onToggle} aria-label="Open agent panel">‹</button></aside>;
+    return <aside className="right rail"><button className="btn btn-ghost" onClick={onToggle} aria-label="Открыть панель агента">‹</button></aside>;
   }
   const selectedChange = changes.find((c) => c.id === selected) ?? null;
   return (
-    <aside className="right" aria-label="Agent">
-      <div className="right-h"><strong>Agent</strong><button className="btn btn-ghost" onClick={onToggle} aria-label="Collapse agent panel">›</button></div>
+    <aside className="right" aria-label="Агент">
+      <div className="right-h"><strong>Агент</strong><button className="btn btn-ghost" onClick={onToggle} aria-label="Свернуть панель агента">›</button></div>
       <div className="right-body">
         <Timeline steps={steps} connection={connection} />
         <ChangeList changes={changes} selected={selected} onSelect={onSelect} />

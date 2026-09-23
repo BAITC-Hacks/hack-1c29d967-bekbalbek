@@ -21,8 +21,8 @@ export function NeedsInputForm({ message, fields, input, domain, onContinue, bus
   };
 
   return (
-    <div className="card card-attention" role="region" aria-label="Missing information">
-      <div className="card-h"><span className="chip chip-attention">? Needs information</span><strong>The agent stopped to ask</strong></div>
+    <div className="card card-attention" role="region" aria-label="Недостающие данные">
+      <div className="card-h"><span className="chip chip-attention">? Нужны уточнения</span><strong>Нужно уточнить данные</strong></div>
       <p className="card-p">{message}</p>
       <div className="fields">
         {fields.map((f) => (
@@ -34,7 +34,7 @@ export function NeedsInputForm({ message, fields, input, domain, onContinue, bus
         ))}
       </div>
       <div className="card-actions">
-        <button className="btn btn-primary" disabled={!complete || busy} onClick={submit}>{busy ? "Starting…" : "Continue"}</button>
+        <button className="btn btn-primary" disabled={!complete || busy} onClick={submit}>{busy ? "Запускаем…" : "Продолжить"}</button>
       </div>
     </div>
   );

@@ -27,8 +27,8 @@ export function orphanRuns(runs: Run[], examples: ExampleCase[]): Run[] {
 
 export function relativeTime(iso: string, now: number = Date.now()): string {
   const seconds = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.round(seconds / 3600)}h ago`;
-  return `${Math.round(seconds / 86400)}d ago`;
+  if (seconds < 60) return `${seconds} с назад`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)} мин назад`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)} ч назад`;
+  return `${Math.round(seconds / 86400)} д назад`;
 }

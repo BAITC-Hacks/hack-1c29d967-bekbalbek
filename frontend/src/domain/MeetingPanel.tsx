@@ -9,7 +9,7 @@ import "./meeting-panel.css";
 const describe = (error: unknown) => error instanceof Error ? error.message : String(error);
 const statusLabels = { uploaded: "загружена", transcribing: "распознаётся", ready: "стенограмма готова", failed: "ошибка" };
 
-function UploadForm({ onChanged }: Pick<DemoPanelProps, "onChanged">) {
+function UploadForm({ onChanged, hasMeeting }: Pick<DemoPanelProps, "onChanged"> & { hasMeeting: boolean }) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(localDate);
@@ -30,7 +30,7 @@ function UploadForm({ onChanged }: Pick<DemoPanelProps, "onChanged">) {
     } catch (cause) { setError(describe(cause)); }
     finally { setBusy(false); }
   };
-  return <details className="meeting-upload" open>
+  return <details className="meeting-upload" open={!hasMeeting}>
     <summary>Новая запись</summary>
     <form onSubmit={(event) => { void submit(event); }} className="upload-form">
       <label className="field"><span>Аудио или видео</span>
@@ -178,7 +178,7 @@ function MeetingSession({ api, caseView, onChanged }: DemoPanelProps & { caseVie
 
 export function MeetingPanel(props: DemoPanelProps) {
   return <section className="meeting-panel card" aria-label="Запись совещания">
-    <UploadForm onChanged={props.onChanged} />
+    <UploadForm onChanged={props.onChanged} hasMeeting={Boolean(props.caseView)} />
     {props.caseView && <MeetingSession key={props.caseView.case_ref} {...props} caseView={props.caseView} />}
   </section>;
 }

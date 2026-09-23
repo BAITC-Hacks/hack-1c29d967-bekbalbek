@@ -38,7 +38,7 @@ describe("Dashboard", () => {
     const user = userEvent.setup();
     renderDashboard({ runs: [], caseView: { ...caseView, status: "uploaded", meeting: { ...caseView.meeting, status: "uploaded" } } });
     await user.click(await screen.findByText("Развитие химической промышленности и ТБ"));
-    expect(await screen.findByRole("button", { name: /run analysis/i })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: /сформировать (протокол|заново)/i })).toBeDisabled();
   });
   it("should list examples and previous runs in the left panel", async () => {
     renderDashboard();
@@ -50,23 +50,23 @@ describe("Dashboard", () => {
     const user = userEvent.setup();
     const fake = renderDashboard();
     await user.click(await screen.findByText("Развитие химической промышленности и ТБ"));
-    await user.click(await screen.findByRole("button", { name: /run analysis/i }));
+    await user.click(await screen.findByRole("button", { name: /сформировать (протокол|заново)/i }));
     expect(fake.calls.createRun[0].case_ref).toBe("m-sample-1");
 
     act(() => FakeEventSource.last().emitAll(happyEvents));
     expect(await screen.findByText("Чтение совещания")).toBeInTheDocument();
-    expect(await screen.findByText(/Proposal ready · 3 action/)).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole("button", { name: /apply proposal/i })).toBeDisabled());
+    expect(await screen.findByText(/Протокол готов · поручений: 3/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: /подтвердить протокол/i })).toBeDisabled());
 
     const table = await screen.findByRole("table");
     expect(within(table).getAllByText(/Айдос Б\./).length).toBeGreaterThan(0);
-    await user.click(screen.getByLabelText(/reviewed the warning/i));
-    await user.click(screen.getByRole("button", { name: /apply proposal/i }));
+    await user.click(screen.getByLabelText(/проверил предупреждения/i));
+    await user.click(screen.getByRole("button", { name: /подтвердить протокол/i }));
     expect(fake.calls.apply).toHaveLength(1);
 
     act(() => FakeEventSource.last().emitAll(applyEvents));
-    expect(await screen.findByText(/applied and verified/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Before → after/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Сохранено и проверено/i)).toBeInTheDocument();
+    expect(await screen.findByText(/До → после/i)).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "Скачать PDF" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Скачать DOCX" })).toBeInTheDocument();
   });
@@ -77,7 +77,7 @@ describe("Dashboard", () => {
     await user.click(await screen.findByRole("button", { name: /Подготовь протокол оперативного совещания.*m-sample-2/ }));
     const input = await screen.findByLabelText("meeting_date");
     await user.type(input, "2026-09-23");
-    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(screen.getByRole("button", { name: /продолжить/i }));
     expect(fake.calls.createRun[0].input).toEqual({ meeting_date: "2026-09-23" });
   });
 
@@ -94,10 +94,10 @@ describe("Dashboard", () => {
     const apply = vi.fn(async () => { throw new ApiError("stale_proposal", "The data changed", 409, { fingerprint_changed: true, validation: { errors: [] } }); });
     renderDashboard({ apply });
     await user.click(await screen.findByText(/Составь протокол совещания\./));
-    await user.click(await screen.findByLabelText(/reviewed the warning/i));
-    await user.click(screen.getByRole("button", { name: /apply proposal/i }));
+    await user.click(await screen.findByLabelText(/проверил предупреждения/i));
+    await user.click(screen.getByRole("button", { name: /подтвердить протокол/i }));
     expect(await screen.findByText(/data changed/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /re-run analysis/i })).toBeInTheDocument();
+    expect(within(screen.getByRole("alert")).getByRole("button", { name: /сформировать заново/i })).toBeInTheDocument();
   });
 
   it("should open an evidence drawer for a selected change", async () => {
@@ -111,7 +111,7 @@ describe("Dashboard", () => {
   it("should reset sample data from the top bar", async () => {
     const user = userEvent.setup();
     const fake = renderDashboard();
-    await user.click(await screen.findByRole("button", { name: /reset sample data/i }));
+    await user.click(await screen.findByRole("button", { name: /сбросить примеры/i }));
     await waitFor(() => expect(fake.calls.reset).toBe(1));
   });
 

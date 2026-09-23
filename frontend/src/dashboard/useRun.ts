@@ -115,8 +115,10 @@ export function useRun(api: Api, eventSourceFactory: EventSourceFactory = defaul
     const loaded = await refresh(runId);
     if (!loaded || runIdRef.current !== runId) return;
     if (isTerminalPhase(phaseFromStatus(loaded.run.status))) {
-      const events = await api.listEvents(runId);
-      if (runIdRef.current === runId) setTimeline(events.reduce(reduceTimeline, initialTimeline));
+      try {
+        const events = await api.listEvents(runId);
+        if (runIdRef.current === runId) setTimeline(events.reduce(reduceTimeline, initialTimeline));
+      } catch (cause) { if (runIdRef.current === runId) setError(asApiError(cause)); }
       return;
     }
     openStream(runId);
@@ -147,14 +149,19 @@ export function useRun(api: Api, eventSourceFactory: EventSourceFactory = defaul
     setBusy("applying");
     setError(null);
     try {
-      await api.apply(current.run.id, current.proposal.id, current.proposal.version);
+      const result = await api.apply(current.run.id, current.proposal.id, current.proposal.version);
+      if (runIdRef.current === current.run.id) {
+        setDetail((previous) => previous ? { ...previous, run: result.run, application: result.application } : previous);
+        setTimeline((previous) => ({ ...previous, status: result.run.status }));
+        if (isTerminalPhase(phaseFromStatus(result.run.status))) closeStream();
+      }
     } catch (cause) {
       setError(asApiError(cause));
     } finally {
       setBusy((busyNow) => (busyNow === "applying" ? null : busyNow));
       await refresh(current.run.id);
     }
-  }, [api, detail, refresh]);
+  }, [api, detail, refresh, closeStream]);
 
   useEffect(() => closeStream, [closeStream]);
 

@@ -49,7 +49,7 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   }, []);
 
   const loadRuns = useCallback(
-    () => api.listRuns().then(setRuns).catch((error: unknown) => notify(`Could not load runs: ${describe(error)}`)),
+    () => api.listRuns().then(setRuns).catch((error: unknown) => notify(`Не удалось загрузить историю: ${describe(error)}`)),
     [api, notify],
   );
 
@@ -75,9 +75,12 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   }, []);
 
   useEffect(() => {
-    api.health().then(setHealth).catch(() => setHealth(null));
-    api.examples().then(setExamples).catch((error) => notify(`Could not load examples: ${describe(error)}`));
+    const refreshHealth = () => { void api.health().then(setHealth).catch(() => setHealth(null)); };
+    refreshHealth();
+    const healthTimer = window.setInterval(refreshHealth, 10000);
+    api.examples().then(setExamples).catch((error) => notify(`Не удалось загрузить совещания: ${describe(error)}`));
     void loadRuns();
+    return () => window.clearInterval(healthTimer);
   }, [api, loadRuns, notify]);
 
   const routeExample = route.kind === "example" ? examples.find((e) => e.id === route.id) ?? null : null;
@@ -131,13 +134,13 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
     setResetting(true);
     try {
       await api.resetSampleData();
-      notify("Sample data reset");
+      notify("Примеры сброшены");
       navigate({ kind: "none" });
       await loadRuns();
       await api.examples().then(setExamples);
       setCaseView(null);
     } catch (error) {
-      notify(`Reset failed: ${describe(error)}`);
+      notify(`Не удалось сбросить примеры: ${describe(error)}`);
     } finally {
       setResetting(false);
     }

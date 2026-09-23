@@ -5,8 +5,8 @@ const checkChip = (status: "pass" | "warn" | "fail") => (status === "pass" ? "ch
 export function ChangeList({ changes, selected, onSelect }: { changes: ChangeRow[]; selected: string | null; onSelect: (id: string | null) => void }) {
   if (changes.length === 0) return null;
   return (
-    <section aria-label="Proposed changes">
-      <h4>Proposed changes <span className="cnt">{changes.length}</span></h4>
+    <section aria-label="Предложенные поручения">
+      <h4>Предложенные поручения <span className="cnt">{changes.length}</span></h4>
       <ul className="changes">
         {changes.map((change) => (
           <li key={change.id} className={change.id === selected ? "on" : ""}>

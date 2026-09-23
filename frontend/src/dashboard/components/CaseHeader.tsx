@@ -20,7 +20,7 @@ export function Stepper({ phase }: { phase: Phase }) {
   const { done, current } = journeyProgress(phase);
   const complete = phase === "verified";
   return (
-    <ol className="stepper" aria-label="Case progress">
+    <ol className="stepper" aria-label="Этапы обработки">
       {JOURNEY.map((label, i) => (
         <li key={label} className={i < done ? "done" : i === current && !complete ? "current" : ""}>
           <span className="st-dot" /><span className="st-l">{label}</span>
@@ -37,15 +37,15 @@ export function CaseHeader({ title, summary, caseRef, phase, outcome, model, his
       <h1>{title}</h1>
       <div className="case-meta">
         <span className="chip mono">{caseRef}</span>
-        {outcome && <span className="chip">{outcome.replace("_", " ")}</span>}
+        {outcome && <span className="chip">{{ proposal_ready: "Готов к проверке", needs_input: "Нужны данные", infeasible: "Нет результата" }[outcome] ?? outcome}</span>}
         {model && <span className="chip">{model}</span>}
         <span className={`chip ${chip.cls}`} aria-live="polite">{chip.busy ? <span className="spinner" /> : chip.icon} {chip.text}</span>
         <Stepper phase={phase} />
       </div>
       {summary && <p className="case-sum">{summary}</p>}
       {history.length > 0 && (
-        <div className="history" aria-label="Runs of this case">
-          <span className="muted small">Runs</span>
+        <div className="history" aria-label="История анализа">
+          <span className="muted small">Запуски</span>
           {history.slice(0, MAX_HISTORY).map((run) => {
             const p = phaseFromStatus(run.status);
             return (
@@ -54,7 +54,7 @@ export function CaseHeader({ title, summary, caseRef, phase, outcome, model, his
               </button>
             );
           })}
-          {history.length > MAX_HISTORY && <span className="muted small">+{history.length - MAX_HISTORY} older</span>}
+          {history.length > MAX_HISTORY && <span className="muted small">+{history.length - MAX_HISTORY} ранее</span>}
         </div>
       )}
     </div>

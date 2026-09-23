@@ -28,20 +28,20 @@ export function Timeline({ steps, connection }: { steps: Step[]; connection: Con
   const done = steps.filter((s) => s.kind === "tool" && s.state === "done").length;
   const tools = steps.filter((s) => s.kind === "tool").length;
   return (
-    <section aria-label="Activity">
+    <section aria-label="Действия агента">
       <h4>
-        Activity {tools > 0 && <span className="cnt">{done} of {tools} tool calls</span>}
-        {connection === "live" && <span className="live-dot" title="Live" />}
-        {connection === "reconnecting" && <span className="chip chip-attention mini" role="status">Reconnecting…</span>}
+        Действия агента {tools > 0 && <span className="cnt">{done} из {tools} действий</span>}
+        {connection === "live" && <span className="live-dot" title="Соединение установлено" />}
+        {connection === "reconnecting" && <span className="chip chip-attention mini" role="status">Восстанавливаем связь…</span>}
       </h4>
-      {steps.length === 0 && <p className="muted">No run yet. Start the analysis to see each step here.</p>}
+      {steps.length === 0 && <p className="muted">Сформируйте протокол, чтобы увидеть действия агента.</p>}
       <ul className="acts" aria-live="polite">
         {steps.map((step) => (
           <li key={step.id} className={`act ${step.state} tone-${step.tone}`}>
             <span className="act-i">{icon(step)}</span>
             <span className="act-l">{step.label}</span>
             <button className="act-d" onClick={() => setOpen((o) => ({ ...o, [step.id]: !o[step.id] }))} aria-expanded={Boolean(open[step.id])}>
-              {open[step.id] ? "Hide" : "Details"}
+              {open[step.id] ? "Скрыть" : "Подробнее"}
             </button>
             {step.detail && !open[step.id] && <span className="act-sub">{step.detail.split("\n")[0]}</span>}
             {open[step.id] && <Details step={step} />}

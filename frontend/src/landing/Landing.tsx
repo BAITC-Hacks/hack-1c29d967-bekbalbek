@@ -28,7 +28,7 @@ function SceneActivity({ scene, active }: { scene: (typeof heroScenes)[0]; activ
   if (scene.kind !== "activity") return null;
   return (
     <div className="mock">
-      <div className="mock-head"><span className="chip chip-attention">Analyzing</span><span className="mock-title">{scene.title}</span></div>
+      <div className="mock-head"><span className="chip chip-attention">Анализ</span><span className="mock-title">{scene.title}</span></div>
       <ul className="mock-activity">
         {scene.lines.map((l, i) => {
           const shown = active ? step : 0;
@@ -50,7 +50,7 @@ function SceneProposal({ scene }: { scene: (typeof heroScenes)[1] }) {
   if (scene.kind !== "proposal") return null;
   return (
     <div className="mock">
-      <div className="mock-head"><span className="chip chip-proposed">◇ Proposed</span><span className="mock-title">{scene.title}</span></div>
+      <div className="mock-head"><span className="chip chip-proposed">◇ Проект</span><span className="mock-title">{scene.title}</span></div>
       <div className="mock-rows">
         {scene.rows.map((r, i) => (
           <div key={r.label} className="diff-row" style={{ animationDelay: `${i * 80}ms` }}>
@@ -71,7 +71,7 @@ function SceneVerified({ scene }: { scene: (typeof heroScenes)[2] }) {
   if (scene.kind !== "verified") return null;
   return (
     <div className="mock">
-      <div className="mock-head"><span className="chip chip-verified">✓ Verified</span><span className="mock-title">{scene.title}</span></div>
+      <div className="mock-head"><span className="chip chip-verified">✓ Подтверждён</span><span className="mock-title">{scene.title}</span></div>
       <ul className="mock-verified">
         {scene.lines.map((l, i) => <li key={l} style={{ animationDelay: `${i * 120}ms` }}>✓ {l}</li>)}
       </ul>
@@ -86,10 +86,10 @@ function HeroDemo() {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="hero-demo" aria-label="Product demo">
+    <div className="hero-demo" aria-label="Иллюстрация работы интерфейса">
       <div className="hero-demo-tabs">
         {heroScenes.map((s, k) => (
-          <button key={s.title} className={k === i ? "on" : ""} onClick={() => setI(k)}>{["Analyze", "Propose", "Verify"][k]}</button>
+          <button key={s.title} className={k === i ? "on" : ""} onClick={() => setI(k)}>{["Анализ", "Поручения", "Подтверждение"][k]}</button>
         ))}
       </div>
       <div className="hero-demo-stage">
@@ -111,7 +111,7 @@ function MockTable({ highlight }: { highlight: boolean }) {
   const changed = new Set(c.changes.map((ch) => ch.label.replace("#", "")));
   return (
     <div className="tour-mock">
-      <div className="tm-toolbar"><span className="tm-search">Search cases</span><span className="chip">5 open</span></div>
+      <div className="tm-toolbar"><span className="tm-search">Поиск совещаний</span><span className="chip">Пример поручений</span></div>
       <table className="tm-table">
         <thead><tr>{c.columns.map((h) => <th key={h}>{h}</th>)}</tr></thead>
         <tbody>
@@ -144,7 +144,7 @@ function MockTimeline() {
 function MockDocument() {
   return (
     <div className="tour-mock tm-doc">
-      <div className="chip chip-verified">✓ Verified</div>
+      <div className="chip chip-verified">✓ Подтверждён</div>
       <h4>{landingCopy.tourResult.title}</h4>
       <p>{landingCopy.tourResult.body}</p>
       <div className="tm-evidence">{landingCopy.tourResult.evidenceLabel} <span className="ev">{landingCopy.tourResult.evidence}</span></div>
@@ -209,7 +209,7 @@ function Signature() {
         <div ref={ref} className={`sig sig-${phase}`}>
           <div className="sig-head">
             <span className="sig-title">{ch.label} · {ch.field}</span>
-            <span className={`chip chip-${phase}`}>{phase === "applying" ? <span className="spinner" /> : phase === "verified" ? "✓" : phase === "applied" ? "●" : "◇"} {phase}</span>
+            <span className={`chip chip-${phase}`}>{phase === "applying" ? <span className="spinner" /> : phase === "verified" ? "✓" : phase === "applied" ? "●" : "◇"} {label}</span>
           </div>
           <div className="sig-diff">
             <span className="diff-from">{ch.from}</span><span className="diff-arrow">→</span><span className="diff-to">{ch.to}</span>
@@ -246,6 +246,7 @@ export default function Landing() {
           <h1>{brand.tagline}</h1>
           <p className="lead">{brand.sub}</p>
           <div className="hero-cta"><a className="btn btn-primary btn-lg" href="#/app">{brand.ctaPrimary}</a><a className="btn btn-lg" href="#tour">{brand.ctaSecondary}</a></div>
+          <p className="small muted">Ниже — иллюстрация интерфейса. Обработка вашей записи запускается в рабочем пространстве.</p>
           <HeroDemo />
         </div>
       </section>
@@ -287,7 +288,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="foot"><div className="wrap">{brand.name} · {landingCopy.footer} · <a href="#/app">Dashboard</a></div></footer>
+      <footer className="foot"><div className="wrap">{brand.name} · {landingCopy.footer} · <a href="#/app">Совещания</a></div></footer>
     </div>
   );
 }

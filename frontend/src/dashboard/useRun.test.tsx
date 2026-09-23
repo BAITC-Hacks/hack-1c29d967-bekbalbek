@@ -8,6 +8,17 @@ import { useRun } from "./useRun";
 beforeEach(() => FakeEventSource.reset());
 
 describe("useRun", () => {
+  it("should show successful confirmation even if the event stream is disconnected", async () => {
+    const { api } = createFakeApi();
+    const { result } = renderHook(() => useRun(api, fakeEventSourceFactory));
+    await act(() => result.current.select("run-1"));
+    act(() => FakeEventSource.last().emitAll(happyEvents));
+    await waitFor(() => expect(result.current.phase).toBe("proposed"));
+    act(() => FakeEventSource.last().emitError());
+    await act(() => result.current.apply());
+    expect(result.current.phase).toBe("verified");
+    expect(FakeEventSource.last().closed).toBe(true);
+  });
   it("should start a run, stream its events into the timeline and refetch the detail when the proposal is ready", async () => {
     const { api, calls } = createFakeApi();
     const { result } = renderHook(() => useRun(api, fakeEventSourceFactory));

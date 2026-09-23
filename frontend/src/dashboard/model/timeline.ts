@@ -49,7 +49,7 @@ function validationSummary(report: ValidationReport | undefined): string {
   if (!report) return "";
   const warnings = report.checks.filter((c) => c.status === "warn").length;
   const passes = report.checks.filter((c) => c.status === "pass").length;
-  return `${passes} checks passed · ${warnings} warning${warnings === 1 ? "" : "s"} · ${report.errors.length} failing`;
+  return `Проверок пройдено: ${passes} · предупреждений: ${warnings} · ошибок: ${report.errors.length}`;
 }
 
 function describeErrors(errors: Pick<ValidationCheck, "rule_id" | "message">[]): string {
@@ -60,42 +60,42 @@ function stepFor(event: RunEvent): Step | null {
   const p = event.payload as P;
   switch (event.type) {
     case "run_started":
-      return milestone(event, "Run started", `${str(p.model)} · up to ${num(p.max_turns)} turns`, "neutral");
+      return milestone(event, "Анализ начат", `${str(p.model)} · до ${num(p.max_turns)} шагов`, "neutral");
     case "agent_output": {
       const outcome = str(p.outcome);
       const tone: Tone = outcome === "proposal_ready" ? "ok" : outcome === "needs_input" ? "warn" : "bad";
-      return milestone(event, `Agent answered: ${outcome.replace("_", " ")}`, str(p.message), tone);
+      return milestone(event, `Ответ агента`, str(p.message), tone);
     }
     case "proposal_ready":
-      return milestone(event, `Proposal ready · ${num(p.action_count)} action(s)`,
+      return milestone(event, `Протокол готов · поручений: ${num(p.action_count)}`,
         [str(p.summary), validationSummary(p.validation as ValidationReport | undefined)].filter(Boolean).join("\n"), "ok");
     case "validation_failed": {
       const errors = (p.errors as ValidationCheck[] | undefined) ?? [];
-      const suffix = p.will_revise ? "\nOne revision allowed." : "\nNo revisions left.";
-      return milestone(event, `Validation failed · ${errors.length} check(s)`, describeErrors(errors) + suffix, "bad");
+      const suffix = p.will_revise ? "\nПовторяем исправление." : "\nИсправления исчерпаны.";
+      return milestone(event, `Ошибка проверки · замечаний: ${errors.length}`, describeErrors(errors) + suffix, "bad");
     }
     case "revision_started":
-      return milestone(event, `Revising the proposal (attempt ${num(p.attempt)})`, str(p.reason), "warn");
+      return milestone(event, `Исправление протокола (попытка ${num(p.attempt)})`, str(p.reason), "warn");
     case "apply_started":
-      return milestone(event, `Applying proposal v${num(p.version)}`, "Writing the changes to the database", "neutral", "running", "apply");
+      return milestone(event, `Сохраняем протокол v${num(p.version)}`, "Запись протокола и поручений", "neutral", "running", "apply");
     case "apply_rejected":
-      return milestone(event, `Apply rejected: ${str(p.code)}`, str(p.message), "bad");
+      return milestone(event, `Подтверждение отклонено: ${str(p.code)}`, str(p.message), "bad");
     case "action_applied":
-      return milestone(event, `Applied: ${str(p.summary)}`, "", "ok");
+      return milestone(event, `Сохранено: ${str(p.summary)}`, "", "ok");
     case "verification_finished": {
       const report = p as unknown as VerificationReport;
       const checks = report.checks?.map((c) => `${c.ok ? "✓" : "✕"} ${c.label}: ${c.detail}`).join("\n") ?? "";
-      return milestone(event, report.ok ? "Verified: the committed state matches the proposal" : "Verification failed",
+      return milestone(event, report.ok ? "Подтверждено: сохранённый протокол проверен" : "Ошибка проверки сохранения",
         [report.summary, checks].filter(Boolean).join("\n"), report.ok ? "ok" : "bad");
     }
     case "run_finished": {
       const usage = p.usage as Usage | null | undefined;
-      const tokens = usage ? ` · ${usage.total_tokens} tokens` : "";
-      return milestone(event, `Finished: ${str(p.status).replace("_", " ")}`, `${num(p.tool_calls)} tool calls · ${num(p.duration_ms)} ms${tokens}`,
+      const tokens = usage ? ` · токенов: ${usage.total_tokens}` : "";
+      return milestone(event, `Завершено: ${{ proposed: "проект готов", verified: "подтверждено", failed: "ошибка", needs_input: "нужны данные", infeasible: "нет результата" }[str(p.status)] ?? str(p.status)}`, `${num(p.tool_calls)} действий · ${num(p.duration_ms)} ms${tokens}`,
         str(p.status) === "verified" ? "ok" : "neutral");
     }
     case "run_failed":
-      return milestone(event, `Run failed: ${str(p.code)}`, str(p.message), "bad");
+      return milestone(event, `Ошибка анализа: ${str(p.code)}`, str(p.message), "bad");
     default:
       return null;
   }
@@ -115,7 +115,7 @@ function reduceTool(state: TimelineState, event: RunEvent): Step[] {
     case "tool_failed": {
       const error = (p.error as { code: string; message: string } | undefined) ?? { code: "error", message: "" };
       if (p.will_retry) {
-        return updateStep(state.steps, id, { state: "running", tone: "warn", detail: `Retrying after ${error.code}: ${error.message} (attempt ${num(p.attempt, 1)})`, error });
+        return updateStep(state.steps, id, { state: "running", tone: "warn", detail: `Повтор после ${error.code}: ${error.message} (попытка ${num(p.attempt, 1)})`, error });
       }
       return updateStep(state.steps, id, { state: "failed", tone: "bad", detail: `${error.code}: ${error.message}`, error, durationMs: num(p.duration_ms), attempt: num(p.attempt, 1) });
     }

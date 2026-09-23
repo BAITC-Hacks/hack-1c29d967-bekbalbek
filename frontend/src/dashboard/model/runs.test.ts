@@ -36,10 +36,10 @@ describe("runs model", () => {
 
   it("should format relative times and clamp the future to now", () => {
     const now = Date.parse("2026-09-24T12:00:00Z");
-    expect(relativeTime("2026-09-24T11:59:30Z", now)).toBe("30s ago");
-    expect(relativeTime("2026-09-24T11:30:00Z", now)).toBe("30m ago");
-    expect(relativeTime("2026-09-24T06:00:00Z", now)).toBe("6h ago");
-    expect(relativeTime("2026-09-20T12:00:00Z", now)).toBe("4d ago");
-    expect(relativeTime("2026-09-25T12:00:00Z", now)).toBe("0s ago");
+    expect(relativeTime("2026-09-24T11:59:30Z", now)).toBe("30 с назад");
+    expect(relativeTime("2026-09-24T11:30:00Z", now)).toBe("30 мин назад");
+    expect(relativeTime("2026-09-24T06:00:00Z", now)).toBe("6 ч назад");
+    expect(relativeTime("2026-09-20T12:00:00Z", now)).toBe("4 д назад");
+    expect(relativeTime("2026-09-25T12:00:00Z", now)).toBe("0 с назад");
   });
 });

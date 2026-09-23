@@ -16,8 +16,8 @@ describe("EvidenceDrawer", () => {
     const writeText = vi.fn(async () => undefined);
     mockClipboard(writeText);
     render(<EvidenceDrawer change={change} caseView={caseView} domain={protokolDomain} onClose={() => undefined} />);
-    await user.click(screen.getAllByRole("button", { name: /copy reference/i })[0]);
-    expect(await screen.findByText("Copied")).toBeInTheDocument();
+    await user.click(screen.getAllByRole("button", { name: /скопировать ссылку/i })[0]);
+    expect(await screen.findByText("Скопировано")).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith("segment:104");
   });
 
@@ -25,7 +25,7 @@ describe("EvidenceDrawer", () => {
     const user = userEvent.setup({ writeToClipboard: false });
     mockClipboard(async () => { throw new Error("denied"); });
     render(<EvidenceDrawer change={change} caseView={caseView} domain={protokolDomain} onClose={() => undefined} />);
-    await user.click(screen.getAllByRole("button", { name: /copy reference/i })[0]);
-    expect(await screen.findByText(/copy failed/i)).toBeInTheDocument();
+    await user.click(screen.getAllByRole("button", { name: /скопировать ссылку/i })[0]);
+    expect(await screen.findByText(/не удалось скопировать/i)).toBeInTheDocument();
   });
 });

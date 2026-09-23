@@ -13,7 +13,7 @@ interface Props {
 }
 
 function statusLine(run: Run | null): { cls: string; text: string } {
-  if (!run) return { cls: "", text: "Not run yet" };
+  if (!run) return { cls: "", text: "Протокол ещё не сформирован" };
   const phase = phaseFromStatus(run.status);
   return { cls: `dot-${phase}`, text: `${phaseChip[phase].text} · ${relativeTime(run.created_at)}` };
 }
@@ -31,10 +31,10 @@ export function CaseList({ examples, runs, activeExampleId, activeRunId, onPickE
   const others = useMemo(() => orphanRuns(runs, examples).filter((r) => `${r.goal} ${r.case_ref}`.toLowerCase().includes(q)), [examples, runs, q]);
 
   return (
-    <aside className="left" aria-label="Cases">
-      <input className="search" placeholder="Search cases" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search cases" />
+    <aside className="left" aria-label="Совещания">
+      <input className="search" placeholder="Поиск совещаний" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Поиск совещаний" />
       <div className="group">
-        <div className="group-h">Cases <span>{cases.length}</span></div>
+        <div className="group-h">Совещания <span>{cases.length}</span></div>
         {cases.map(({ example, latest }) => {
           const status = statusLine(latest);
           return (
@@ -46,11 +46,11 @@ export function CaseList({ examples, runs, activeExampleId, activeRunId, onPickE
             </button>
           );
         })}
-        {examples.length === 0 && <p className="muted small">No examples published by the backend.</p>}
+        {examples.length === 0 && <p className="muted small">Загрузите первую запись совещания.</p>}
       </div>
       {others.length > 0 && (
         <div className="group">
-          <div className="group-h">Other runs <span>{others.length}</span></div>
+          <div className="group-h">Другие запуски <span>{others.length}</span></div>
           {others.map((run) => {
             const status = statusLine(run);
             return (
