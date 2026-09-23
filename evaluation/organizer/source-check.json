@@ -1,0 +1,33 @@
+{
+  "checked_at": "2026-09-23T11:48:04.120067+00:00",
+  "command": "python evaluation/organizer/check_samples.py --source-dir evaluation/organizer/source",
+  "exit_code": 0,
+  "stdout": "PASS meeting_1: both source hashes; 10 reference groups match DOCX\nPASS meeting_2: both source hashes; 6 reference groups match DOCX\nSource/reference checks passed. ASR, diarization and model accuracy were NOT evaluated.\n",
+  "stderr": "",
+  "files": [
+    {
+      "filename": "Протокол_совещания№1.docx",
+      "size_bytes": 12894,
+      "sha256": "c2f5210106b96317730a06f71c29990f3876f70533b6c8671b30d04396a856e2",
+      "relative_symlink": null
+    },
+    {
+      "filename": "Протокол_совещания№2.docx",
+      "size_bytes": 12467,
+      "sha256": "0bcee5d2fdbed172beaaa758627bb78dd0b523ab48789833e949e62da61dfdb5",
+      "relative_symlink": null
+    },
+    {
+      "filename": "Совещание №1.mp3",
+      "size_bytes": 4426407,
+      "sha256": "0f18f11a6f65f9a2bad6497f387b224c775885a03a811edf3fb15c5238db6f54",
+      "relative_symlink": "../../../backend/samples/sovechanie_1.mp3"
+    },
+    {
+      "filename": "Совещание №2.mp3",
+      "size_bytes": 3334695,
+      "sha256": "b7a42833d0691b99af300a24c7dcdeaf05378355633fb867ef6bfc9e2a8f8f46",
+      "relative_symlink": "../../../backend/samples/sovechanie_2.mp3"
+    }
+  ]
+}

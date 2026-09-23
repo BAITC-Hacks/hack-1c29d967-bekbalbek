@@ -27,11 +27,11 @@ install: ## Install backend dependencies
 migrate: ## Apply database migrations
 	cd $(BACKEND) && uv run alembic upgrade head
 
-seed: ## Load / reset the sample dataset
+seed: ## Add the organizer recordings without resetting existing meetings
 	cd $(BACKEND) && uv run python -m scripts.seed
 
-api: ## Run the FastAPI backend on :8000
-	cd $(BACKEND) && uv run uvicorn app.main:app --reload --port 8000
+api: ## Run the live local Qwen API on :8000
+	cd $(BACKEND) && OPENAI_MODEL=$${OPENAI_MODEL:-protokol-qwen3.5:4b} uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 api-demo: ## Run the backend without auto-reload (a file save cannot interrupt a live run)
 	cd $(BACKEND) && uv run uvicorn app.main:app --port 8000
@@ -42,7 +42,7 @@ demo-offline: ## Backend in deterministic scripted mode, no API key needed (run 
 test: ## Backend tests (unit + DB integration; needs the DB)
 	cd $(BACKEND) && uv run pytest -q
 
-smoke: ## Walk the whole API flow with curl against a running backend
+smoke: ## Upload, transcribe, confirm and export via curl (API defaults to :8080)
 	cd $(BACKEND) && ./scripts/smoke.sh
 
 eval: ## Run the evaluation suite (scripted model by default; EVAL_MODEL=live uses the real model)

@@ -34,7 +34,7 @@ class ProposalBase(BaseModel):
 
 
 class MissingField(BaseModel):
-    field: str = Field(description="Dotted path of the missing input, e.g. jobs.j-107.required_skill")
+    field: str = Field(description="Name of the missing input, e.g. meeting_date")
     reason: str
 
 

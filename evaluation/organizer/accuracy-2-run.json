@@ -1,0 +1,1505 @@
+{
+  "run": {
+    "id": "22a1cb44-3694-4b95-a54f-7bf44ae7fa46",
+    "case_ref": "m-sample-2",
+    "goal": "Составь протокол совещания: саммари, решения и поручения с ответственными и сроками.",
+    "input": {
+      "notes": null,
+      "language": "auto",
+      "meeting_date": "2026-09-23"
+    },
+    "status": "proposed",
+    "outcome": "proposal_ready",
+    "model": "protokol-qwen3.5:4b",
+    "max_turns": 12,
+    "error": null,
+    "stats": {
+      "duration_ms": 28736,
+      "tool_calls": 2,
+      "usage": {
+        "requests": 3,
+        "input_tokens": 5808,
+        "total_tokens": 7019,
+        "output_tokens": 1211
+      }
+    },
+    "created_at": "2026-09-23T10:59:04.280702Z",
+    "started_at": "2026-09-23T10:59:04.297282Z",
+    "finished_at": "2026-09-23T10:59:33.034278Z",
+    "updated_at": "2026-09-23T10:59:33.035418Z"
+  },
+  "proposals": [
+    {
+      "id": "25cac6fc-c0e1-4b3c-9634-7c26131c53dd",
+      "run_id": "22a1cb44-3694-4b95-a54f-7bf44ae7fa46",
+      "version": 1,
+      "status": "validated",
+      "content": {
+        "actions": [
+          {
+            "text": "Подготовить претензию к текущему поставщику сырья по договору.",
+            "type": "action_item",
+            "urgency": "низкий",
+            "action_id": "a1",
+            "owner_name": "Ерлан",
+            "deadline_date": "2026-09-25",
+            "deadline_text": "до конца недели",
+            "owner_speaker_id": "S2",
+            "source_segment_ids": [
+              25,
+              26
+            ]
+          },
+          {
+            "text": "Найти альтернативного поставщика сырья на 30% объема.",
+            "type": "action_item",
+            "urgency": "средний",
+            "action_id": "a2",
+            "owner_name": "Батагос Нурлановна",
+            "deadline_date": "2026-10-07",
+            "deadline_text": "за две недели",
+            "owner_speaker_id": null,
+            "source_segment_ids": [
+              25
+            ]
+          },
+          {
+            "text": "Собрать совещание с подрядчиками для фиксации еженедельных контрольных точек.",
+            "type": "action_item",
+            "urgency": "средний",
+            "action_id": "a3",
+            "owner_name": "Жан-Достолгатович",
+            "deadline_date": "2026-09-25",
+            "deadline_text": "на этой неделе",
+            "owner_speaker_id": "S5",
+            "source_segment_ids": [
+              29,
+              30
+            ]
+          },
+          {
+            "text": "Подготовить справку по итогам совещания с подрядчиками.",
+            "type": "action_item",
+            "urgency": "низкий",
+            "action_id": "a4",
+            "owner_name": "Жан-Достолгатович",
+            "deadline_date": null,
+            "deadline_text": "по итогам совещания",
+            "owner_speaker_id": "S5",
+            "source_segment_ids": [
+              30
+            ]
+          },
+          {
+            "text": "Организовать дополнительные группы переаттестации или привлечь внешнего тренера.",
+            "type": "action_item",
+            "urgency": "средний",
+            "action_id": "a5",
+            "owner_name": "Ербалат Мухтарович",
+            "deadline_date": null,
+            "deadline_text": "за месяц",
+            "owner_speaker_id": null,
+            "source_segment_ids": [
+              35
+            ]
+          },
+          {
+            "text": "Подготовить смету на дополнительные группы обучения.",
+            "type": "action_item",
+            "urgency": "низкий",
+            "action_id": "a6",
+            "owner_name": "Ербалат Мухтарович",
+            "deadline_date": "2026-09-30",
+            "deadline_text": "за неделю",
+            "owner_speaker_id": "S6",
+            "source_segment_ids": [
+              36
+            ]
+          },
+          {
+            "text": "Подготовить новый шаблон договора с жестким сроком выставления счета и штрафной санкцией.",
+            "type": "action_item",
+            "urgency": "средний",
+            "action_id": "a7",
+            "owner_name": "Салтанат Ербуловна",
+            "deadline_date": null,
+            "deadline_text": "не больше недели",
+            "owner_speaker_id": "S7",
+            "source_segment_ids": [
+              42,
+              43
+            ]
+          },
+          {
+            "text": "Направить официальное уведомление о непринятии просроченных счетов текущим подрядчикам.",
+            "type": "action_item",
+            "urgency": "средний",
+            "action_id": "a8",
+            "owner_name": "Салтанат Ербуловна",
+            "deadline_date": null,
+            "deadline_text": "не больше недели",
+            "owner_speaker_id": "S7",
+            "source_segment_ids": [
+              42,
+              43
+            ]
+          }
+        ],
+        "summary": "На оперативном совещании обсуждены проблемы отчётности по химическому направлению, инвестиционным проектам и промбезопасности. Сформированы решения по поиску альтернативных поставщиков, работе с подрядчиками и организации обучения персонала.",
+        "evidence": [
+          {
+            "ref": "segment:25",
+            "kind": "record",
+            "note": "Так, с этим тянуть нельзя. Смотрите, параллельно ищите второго поставщика, хотя бы на 30 % объема, чтобы не зависеть от одного. И сразу выставляйте претензию нынешнему по договору, там же должна быть неустойка за срыв сроков. Кто у вас курирует договорную работу?"
+          },
+          {
+            "ref": "segment:26",
+            "kind": "record",
+            "note": "Есть юрист в департаменте, Ерлан."
+          },
+          {
+            "ref": "segment:29",
+            "kind": "record",
+            "note": "Понятно. Смотрите, здесь два пути. Либо ждем и теряем темп, либо садимся с подрядчиками и жестко прописываем еженедельные контрольные точки со штрафами за просрочку документации. Предлагаю второй вариант. Соберите совещание с подрядчиками на этой неделе, зафиксируйте новый график с промежуточными датами, а не только финальный срок сдачи."
+          },
+          {
+            "ref": "segment:30",
+            "kind": "record",
+            "note": "Хорошо, на этой неделе организуем."
+          },
+          {
+            "ref": "segment:35",
+            "kind": "record",
+            "note": "Тогда давайте так. Организуйте дополнительные группы. Если нужно, привлеките внешнего сертифицированного тренера наподряд, чтобы закрыть очередь за месяц. Это не тот вопрос, где можно ждать в общей очереди."
+          },
+          {
+            "ref": "segment:36",
+            "kind": "record",
+            "note": "Понял. Найду тренера. За неделю дам смету подоб. Группам."
+          },
+          {
+            "ref": "segment:42",
+            "kind": "record",
+            "note": "Тогда прямое решение – пропишите в новых договорах… жесткий срок выставления счета, например, 5 рабочих дней после выполнения работ и штрафную санкцию за нарушение. А по текущим договорам с этими подрядчиками направьте официальное уведомление, что с определенной даты просроченные счета приниматься не будут."
+          },
+          {
+            "ref": "segment:43",
+            "kind": "record",
+            "note": "Хорошо, подготовлю уведомление и обновлю шаблон договора."
+          }
+        ],
+        "decisions": [
+          "Поиск альтернативного поставщика сырья на 30% объема.",
+          "Сбор совещания с подрядчиками для фиксации еженедельных контрольных точек.",
+          "Организация дополнительных групп переаттестации или привлечение внешнего тренера.",
+          "Включение в новые договоры жесткого срока выставления счета и штрафной санкции."
+        ],
+        "assumptions": [],
+        "expected_effects": []
+      },
+      "validation": {
+        "ok": true,
+        "checks": [
+          {
+            "refs": [],
+            "label": "Plan has actions",
+            "source": null,
+            "status": "pass",
+            "message": "8 action(s)",
+            "rule_id": "non_empty_plan",
+            "action_id": null
+          },
+          {
+            "refs": [],
+            "label": "Action ids are unique",
+            "source": null,
+            "status": "pass",
+            "message": "All action ids are unique",
+            "rule_id": "unique_action_id",
+            "action_id": null
+          },
+          {
+            "refs": [
+              "segment:25",
+              "segment:26"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a1"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a1"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "warn",
+            "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+            "rule_id": "deadline_consistent",
+            "action_id": "a1"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a1"
+          },
+          {
+            "refs": [
+              "segment:25"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a2"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a2"
+          },
+          {
+            "refs": [
+              "segment:25"
+            ],
+            "label": "Поручивший подтверждён цитатой",
+            "source": null,
+            "status": "warn",
+            "message": "Указанный говорящий отсутствует в цитатах: поручивший оставлен неуказанным",
+            "rule_id": "giver_matches_evidence",
+            "action_id": "a2"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "warn",
+            "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+            "rule_id": "deadline_consistent",
+            "action_id": "a2"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a2"
+          },
+          {
+            "refs": [
+              "segment:29",
+              "segment:30"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a3"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a3"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "warn",
+            "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+            "rule_id": "deadline_consistent",
+            "action_id": "a3"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a3"
+          },
+          {
+            "refs": [
+              "segment:30"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a4"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a4"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "pass",
+            "message": "Срок согласован",
+            "rule_id": "deadline_consistent",
+            "action_id": "a4"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a4"
+          },
+          {
+            "refs": [
+              "segment:35"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a5"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a5"
+          },
+          {
+            "refs": [
+              "segment:35"
+            ],
+            "label": "Поручивший подтверждён цитатой",
+            "source": null,
+            "status": "warn",
+            "message": "Указанный говорящий отсутствует в цитатах: поручивший оставлен неуказанным",
+            "rule_id": "giver_matches_evidence",
+            "action_id": "a5"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "pass",
+            "message": "Срок согласован",
+            "rule_id": "deadline_consistent",
+            "action_id": "a5"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a5"
+          },
+          {
+            "refs": [
+              "segment:36"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a6"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a6"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "warn",
+            "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+            "rule_id": "deadline_consistent",
+            "action_id": "a6"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a6"
+          },
+          {
+            "refs": [
+              "segment:42",
+              "segment:43"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a7"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a7"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "pass",
+            "message": "Срок согласован",
+            "rule_id": "deadline_consistent",
+            "action_id": "a7"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a7"
+          },
+          {
+            "refs": [
+              "segment:42",
+              "segment:43"
+            ],
+            "label": "Цитата принадлежит совещанию",
+            "source": null,
+            "status": "pass",
+            "message": "Цитаты найдены",
+            "rule_id": "evidence_exists",
+            "action_id": "a8"
+          },
+          {
+            "refs": [],
+            "label": "Говорящий известен",
+            "source": null,
+            "status": "pass",
+            "message": "Говорящий проверен",
+            "rule_id": "owner_known",
+            "action_id": "a8"
+          },
+          {
+            "refs": [],
+            "label": "Срок проверен",
+            "source": null,
+            "status": "pass",
+            "message": "Срок согласован",
+            "rule_id": "deadline_consistent",
+            "action_id": "a8"
+          },
+          {
+            "refs": [],
+            "label": "Ответственный указан",
+            "source": null,
+            "status": "pass",
+            "message": "Имя указано",
+            "rule_id": "owner_named",
+            "action_id": "a8"
+          },
+          {
+            "refs": [
+              "tool:get_meeting"
+            ],
+            "label": "Required evidence tool was used",
+            "source": null,
+            "status": "pass",
+            "message": "Successfully read get_meeting",
+            "rule_id": "required_tool_used",
+            "action_id": null
+          },
+          {
+            "refs": [
+              "tool:read_transcript"
+            ],
+            "label": "Required evidence tool was used",
+            "source": null,
+            "status": "pass",
+            "message": "Successfully read read_transcript",
+            "rule_id": "required_tool_used",
+            "action_id": null
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a1"
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a2"
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a3"
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a4"
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a5"
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a6"
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a7"
+          },
+          {
+            "refs": [],
+            "label": "Evidence was read in this run",
+            "source": null,
+            "status": "pass",
+            "message": "All cited segments were returned by transcript tools",
+            "rule_id": "evidence_read",
+            "action_id": "a8"
+          }
+        ],
+        "errors": []
+      },
+      "basis_fingerprint": "bbb22f882e01d41133738a1adf0e933480cc726ec17521bddf9e38604eddc1d6",
+      "created_at": "2026-09-23T10:59:33.016882Z"
+    }
+  ],
+  "proposal": {
+    "id": "25cac6fc-c0e1-4b3c-9634-7c26131c53dd",
+    "run_id": "22a1cb44-3694-4b95-a54f-7bf44ae7fa46",
+    "version": 1,
+    "status": "validated",
+    "content": {
+      "actions": [
+        {
+          "text": "Подготовить претензию к текущему поставщику сырья по договору.",
+          "type": "action_item",
+          "urgency": "низкий",
+          "action_id": "a1",
+          "owner_name": "Ерлан",
+          "deadline_date": "2026-09-25",
+          "deadline_text": "до конца недели",
+          "owner_speaker_id": "S2",
+          "source_segment_ids": [
+            25,
+            26
+          ]
+        },
+        {
+          "text": "Найти альтернативного поставщика сырья на 30% объема.",
+          "type": "action_item",
+          "urgency": "средний",
+          "action_id": "a2",
+          "owner_name": "Батагос Нурлановна",
+          "deadline_date": "2026-10-07",
+          "deadline_text": "за две недели",
+          "owner_speaker_id": null,
+          "source_segment_ids": [
+            25
+          ]
+        },
+        {
+          "text": "Собрать совещание с подрядчиками для фиксации еженедельных контрольных точек.",
+          "type": "action_item",
+          "urgency": "средний",
+          "action_id": "a3",
+          "owner_name": "Жан-Достолгатович",
+          "deadline_date": "2026-09-25",
+          "deadline_text": "на этой неделе",
+          "owner_speaker_id": "S5",
+          "source_segment_ids": [
+            29,
+            30
+          ]
+        },
+        {
+          "text": "Подготовить справку по итогам совещания с подрядчиками.",
+          "type": "action_item",
+          "urgency": "низкий",
+          "action_id": "a4",
+          "owner_name": "Жан-Достолгатович",
+          "deadline_date": null,
+          "deadline_text": "по итогам совещания",
+          "owner_speaker_id": "S5",
+          "source_segment_ids": [
+            30
+          ]
+        },
+        {
+          "text": "Организовать дополнительные группы переаттестации или привлечь внешнего тренера.",
+          "type": "action_item",
+          "urgency": "средний",
+          "action_id": "a5",
+          "owner_name": "Ербалат Мухтарович",
+          "deadline_date": null,
+          "deadline_text": "за месяц",
+          "owner_speaker_id": null,
+          "source_segment_ids": [
+            35
+          ]
+        },
+        {
+          "text": "Подготовить смету на дополнительные группы обучения.",
+          "type": "action_item",
+          "urgency": "низкий",
+          "action_id": "a6",
+          "owner_name": "Ербалат Мухтарович",
+          "deadline_date": "2026-09-30",
+          "deadline_text": "за неделю",
+          "owner_speaker_id": "S6",
+          "source_segment_ids": [
+            36
+          ]
+        },
+        {
+          "text": "Подготовить новый шаблон договора с жестким сроком выставления счета и штрафной санкцией.",
+          "type": "action_item",
+          "urgency": "средний",
+          "action_id": "a7",
+          "owner_name": "Салтанат Ербуловна",
+          "deadline_date": null,
+          "deadline_text": "не больше недели",
+          "owner_speaker_id": "S7",
+          "source_segment_ids": [
+            42,
+            43
+          ]
+        },
+        {
+          "text": "Направить официальное уведомление о непринятии просроченных счетов текущим подрядчикам.",
+          "type": "action_item",
+          "urgency": "средний",
+          "action_id": "a8",
+          "owner_name": "Салтанат Ербуловна",
+          "deadline_date": null,
+          "deadline_text": "не больше недели",
+          "owner_speaker_id": "S7",
+          "source_segment_ids": [
+            42,
+            43
+          ]
+        }
+      ],
+      "summary": "На оперативном совещании обсуждены проблемы отчётности по химическому направлению, инвестиционным проектам и промбезопасности. Сформированы решения по поиску альтернативных поставщиков, работе с подрядчиками и организации обучения персонала.",
+      "evidence": [
+        {
+          "ref": "segment:25",
+          "kind": "record",
+          "note": "Так, с этим тянуть нельзя. Смотрите, параллельно ищите второго поставщика, хотя бы на 30 % объема, чтобы не зависеть от одного. И сразу выставляйте претензию нынешнему по договору, там же должна быть неустойка за срыв сроков. Кто у вас курирует договорную работу?"
+        },
+        {
+          "ref": "segment:26",
+          "kind": "record",
+          "note": "Есть юрист в департаменте, Ерлан."
+        },
+        {
+          "ref": "segment:29",
+          "kind": "record",
+          "note": "Понятно. Смотрите, здесь два пути. Либо ждем и теряем темп, либо садимся с подрядчиками и жестко прописываем еженедельные контрольные точки со штрафами за просрочку документации. Предлагаю второй вариант. Соберите совещание с подрядчиками на этой неделе, зафиксируйте новый график с промежуточными датами, а не только финальный срок сдачи."
+        },
+        {
+          "ref": "segment:30",
+          "kind": "record",
+          "note": "Хорошо, на этой неделе организуем."
+        },
+        {
+          "ref": "segment:35",
+          "kind": "record",
+          "note": "Тогда давайте так. Организуйте дополнительные группы. Если нужно, привлеките внешнего сертифицированного тренера наподряд, чтобы закрыть очередь за месяц. Это не тот вопрос, где можно ждать в общей очереди."
+        },
+        {
+          "ref": "segment:36",
+          "kind": "record",
+          "note": "Понял. Найду тренера. За неделю дам смету подоб. Группам."
+        },
+        {
+          "ref": "segment:42",
+          "kind": "record",
+          "note": "Тогда прямое решение – пропишите в новых договорах… жесткий срок выставления счета, например, 5 рабочих дней после выполнения работ и штрафную санкцию за нарушение. А по текущим договорам с этими подрядчиками направьте официальное уведомление, что с определенной даты просроченные счета приниматься не будут."
+        },
+        {
+          "ref": "segment:43",
+          "kind": "record",
+          "note": "Хорошо, подготовлю уведомление и обновлю шаблон договора."
+        }
+      ],
+      "decisions": [
+        "Поиск альтернативного поставщика сырья на 30% объема.",
+        "Сбор совещания с подрядчиками для фиксации еженедельных контрольных точек.",
+        "Организация дополнительных групп переаттестации или привлечение внешнего тренера.",
+        "Включение в новые договоры жесткого срока выставления счета и штрафной санкции."
+      ],
+      "assumptions": [],
+      "expected_effects": []
+    },
+    "validation": {
+      "ok": true,
+      "checks": [
+        {
+          "refs": [],
+          "label": "Plan has actions",
+          "source": null,
+          "status": "pass",
+          "message": "8 action(s)",
+          "rule_id": "non_empty_plan",
+          "action_id": null
+        },
+        {
+          "refs": [],
+          "label": "Action ids are unique",
+          "source": null,
+          "status": "pass",
+          "message": "All action ids are unique",
+          "rule_id": "unique_action_id",
+          "action_id": null
+        },
+        {
+          "refs": [
+            "segment:25",
+            "segment:26"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a1"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a1"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "warn",
+          "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+          "rule_id": "deadline_consistent",
+          "action_id": "a1"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a1"
+        },
+        {
+          "refs": [
+            "segment:25"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a2"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a2"
+        },
+        {
+          "refs": [
+            "segment:25"
+          ],
+          "label": "Поручивший подтверждён цитатой",
+          "source": null,
+          "status": "warn",
+          "message": "Указанный говорящий отсутствует в цитатах: поручивший оставлен неуказанным",
+          "rule_id": "giver_matches_evidence",
+          "action_id": "a2"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "warn",
+          "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+          "rule_id": "deadline_consistent",
+          "action_id": "a2"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a2"
+        },
+        {
+          "refs": [
+            "segment:29",
+            "segment:30"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a3"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a3"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "warn",
+          "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+          "rule_id": "deadline_consistent",
+          "action_id": "a3"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a3"
+        },
+        {
+          "refs": [
+            "segment:30"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a4"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a4"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "pass",
+          "message": "Срок согласован",
+          "rule_id": "deadline_consistent",
+          "action_id": "a4"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a4"
+        },
+        {
+          "refs": [
+            "segment:35"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a5"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a5"
+        },
+        {
+          "refs": [
+            "segment:35"
+          ],
+          "label": "Поручивший подтверждён цитатой",
+          "source": null,
+          "status": "warn",
+          "message": "Указанный говорящий отсутствует в цитатах: поручивший оставлен неуказанным",
+          "rule_id": "giver_matches_evidence",
+          "action_id": "a5"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "pass",
+          "message": "Срок согласован",
+          "rule_id": "deadline_consistent",
+          "action_id": "a5"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a5"
+        },
+        {
+          "refs": [
+            "segment:36"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a6"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a6"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "warn",
+          "message": "Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым",
+          "rule_id": "deadline_consistent",
+          "action_id": "a6"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a6"
+        },
+        {
+          "refs": [
+            "segment:42",
+            "segment:43"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a7"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a7"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "pass",
+          "message": "Срок согласован",
+          "rule_id": "deadline_consistent",
+          "action_id": "a7"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a7"
+        },
+        {
+          "refs": [
+            "segment:42",
+            "segment:43"
+          ],
+          "label": "Цитата принадлежит совещанию",
+          "source": null,
+          "status": "pass",
+          "message": "Цитаты найдены",
+          "rule_id": "evidence_exists",
+          "action_id": "a8"
+        },
+        {
+          "refs": [],
+          "label": "Говорящий известен",
+          "source": null,
+          "status": "pass",
+          "message": "Говорящий проверен",
+          "rule_id": "owner_known",
+          "action_id": "a8"
+        },
+        {
+          "refs": [],
+          "label": "Срок проверен",
+          "source": null,
+          "status": "pass",
+          "message": "Срок согласован",
+          "rule_id": "deadline_consistent",
+          "action_id": "a8"
+        },
+        {
+          "refs": [],
+          "label": "Ответственный указан",
+          "source": null,
+          "status": "pass",
+          "message": "Имя указано",
+          "rule_id": "owner_named",
+          "action_id": "a8"
+        },
+        {
+          "refs": [
+            "tool:get_meeting"
+          ],
+          "label": "Required evidence tool was used",
+          "source": null,
+          "status": "pass",
+          "message": "Successfully read get_meeting",
+          "rule_id": "required_tool_used",
+          "action_id": null
+        },
+        {
+          "refs": [
+            "tool:read_transcript"
+          ],
+          "label": "Required evidence tool was used",
+          "source": null,
+          "status": "pass",
+          "message": "Successfully read read_transcript",
+          "rule_id": "required_tool_used",
+          "action_id": null
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a1"
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a2"
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a3"
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a4"
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a5"
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a6"
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a7"
+        },
+        {
+          "refs": [],
+          "label": "Evidence was read in this run",
+          "source": null,
+          "status": "pass",
+          "message": "All cited segments were returned by transcript tools",
+          "rule_id": "evidence_read",
+          "action_id": "a8"
+        }
+      ],
+      "errors": []
+    },
+    "basis_fingerprint": "bbb22f882e01d41133738a1adf0e933480cc726ec17521bddf9e38604eddc1d6",
+    "created_at": "2026-09-23T10:59:33.016882Z"
+  },
+  "needs_input": null,
+  "infeasible": null,
+  "application": null,
+  "snapshot_before": {
+    "action_items": 0,
+    "protocol_exists": false
+  },
+  "snapshot_after": null,
+  "messages": [
+    {
+      "seq": 1,
+      "role": "user",
+      "kind": "message",
+      "content": {
+        "role": "user",
+        "content": "Совещание m-sample-2 от 23.09.2026. Цель: Составь протокол совещания: саммари, решения и поручения с ответственными и сроками."
+      },
+      "created_at": "2026-09-23T10:59:32.987808Z"
+    },
+    {
+      "seq": 2,
+      "role": "assistant",
+      "kind": "tool_call",
+      "content": {
+        "id": "__fake_id__",
+        "name": "get_meeting",
+        "type": "function_call",
+        "call_id": "call_55rbvmec",
+        "arguments": "{}",
+        "provider_data": {
+          "model": "protokol-qwen3.5:4b",
+          "response_id": "chatcmpl-527"
+        }
+      },
+      "created_at": "2026-09-23T10:59:32.987808Z"
+    },
+    {
+      "seq": 3,
+      "role": "tool",
+      "kind": "tool_output",
+      "content": {
+        "type": "function_call_output",
+        "output": "{\"ok\": true, \"data\": {\"id\": \"m-sample-2\", \"title\": \"Оперативное совещание по отчётам департаментов\", \"meeting_date\": \"2026-09-23\", \"duration_s\": 206.03125, \"segment_count\": 22, \"speakers\": [{\"speaker_id\": \"S1\", \"display_name\": \"S1\"}, {\"speaker_id\": \"S2\", \"display_name\": \"S2\"}, {\"speaker_id\": \"S3\", \"display_name\": \"S3\"}, {\"speaker_id\": \"S5\", \"display_name\": \"S5\"}, {\"speaker_id\": \"S6\", \"display_name\": \"S6\"}, {\"speaker_id\": \"S7\", \"display_name\": \"S7\"}]}, \"truncated\": false}",
+        "call_id": "call_55rbvmec"
+      },
+      "created_at": "2026-09-23T10:59:32.987808Z"
+    },
+    {
+      "seq": 4,
+      "role": "assistant",
+      "kind": "tool_call",
+      "content": {
+        "id": "__fake_id__",
+        "name": "read_transcript",
+        "type": "function_call",
+        "call_id": "call_csvqoqsv",
+        "arguments": "{\"offset\":0,\"limit\":0}",
+        "provider_data": {
+          "model": "protokol-qwen3.5:4b",
+          "response_id": "chatcmpl-996"
+        }
+      },
+      "created_at": "2026-09-23T10:59:32.987808Z"
+    },
+    {
+      "seq": 5,
+      "role": "tool",
+      "kind": "tool_output",
+      "content": {
+        "type": "function_call_output",
+        "output": "{\"ok\": true, \"data\": {\"segments\": [{\"id\": 23, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"00:00\", \"text\": \"Коллеги, начинаем оперативное совещание. Формат сегодня такой, каждый докладывает по своему направлению. Показатели, проблема, если есть, и что предлагаете. Начнем с Батагос Нурлановны.\"}, {\"id\": 24, \"speaker\": \"S2\", \"name\": \"S2\", \"t\": \"00:09\", \"text\": \"по химическому направлению за август. Выпуск продукции – 94 % от плана, недобор в основном по полимерной группе. Проблема – срыв поставки сырья от казахстанского поставщика. Третий месяц подряд задержка на 5 -7 дней. Из -за этого простаивает линия.\"}, {\"id\": 25, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"00:28\", \"text\": \"Так, с этим тянуть нельзя. Смотрите, параллельно ищите второго поставщика, хотя бы на 30 % объема, чтобы не зависеть от одного. И сразу выставляйте претензию нынешнему по договору, там же должна быть неустойка за срыв сроков. Кто у вас курирует договорную работу?\"}, {\"id\": 26, \"speaker\": \"S2\", \"name\": \"S2\", \"t\": \"00:41\", \"text\": \"Есть юрист в департаменте, Ерлан.\"}, {\"id\": 27, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"00:44\", \"text\": \"Хорошо, пусть Ерлан до конца недели подготовит претензию. а вы параллельно за две недели найдите альтернативного поставщика хотя бы для расчета. Потом сравним условия и решим окончательно. Поняла, сделаем. Дорога Сталгатович, по\"}, {\"id\": 28, \"speaker\": \"S5\", \"name\": \"S5\", \"t\": \"00:55\", \"text\": \"инвестициям что у нас? По инвестпрограмме на сентябрь, освоение 68 % от планового бюджета. Причина отставания. По трем проектам подрядчики не успевают со сдачей документации, соответственно платежи не проходят. А по каким конкретно проектам? Павлодарский завод. И еще два проекта поменьше в регионах.\"}, {\"id\": 29, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"01:13\", \"text\": \"Понятно. Смотрите, здесь два пути. Либо ждем и теряем темп, либо садимся с подрядчиками и жестко прописываем еженедельные контрольные точки со штрафами за просрочку документации. Предлагаю второй вариант. Соберите совещание с подрядчиками на этой неделе, зафиксируйте новый график с промежуточными датами, а не только финальный срок сдачи.\"}, {\"id\": 30, \"speaker\": \"S5\", \"name\": \"S5\", \"t\": \"01:30\", \"text\": \"Хорошо, на этой неделе организуем.\"}, {\"id\": 31, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"01:32\", \"text\": \"И мне по итогам этого совещания короткую справку, что решили. Сделаю. Ербалат Мухтарович, по вашему направлению.\"}, {\"id\": 32, \"speaker\": \"S6\", \"name\": \"S6\", \"t\": \"01:38\", \"text\": \"По травматизму и промбезопасности показатель в норме. Серьезных инцидентов за месяц не было. Но есть проблема по обучению. У нас 12 % персонала на производственных площадках. С просроченными сертификатами по технике безопасности кадровая служба не успевает организовывать переаттестацию.\"}, {\"id\": 33, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"02:01\", \"text\": \"12 % Это много. Люди без сертификата фактически работают незаконно. Это же прямой риск для компании при проверке.\"}, {\"id\": 34, \"speaker\": \"S6\", \"name\": \"S6\", \"t\": \"02:08\", \"text\": \"Согласен. Проблема в пропускной способности учебного центра. Очередь на переаттестацию.\"}, {\"id\": 35, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"02:14\", \"text\": \"Тогда давайте так. Организуйте дополнительные группы. Если нужно, привлеките внешнего сертифицированного тренера наподряд, чтобы закрыть очередь за месяц. Это не тот вопрос, где можно ждать в общей очереди.\"}, {\"id\": 36, \"speaker\": \"S6\", \"name\": \"S6\", \"t\": \"02:23\", \"text\": \"Понял. Найду тренера. За неделю дам смету подоб. Группам.\"}, {\"id\": 37, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"02:28\", \"text\": \"Хорошо. Жду смету. Согласуем бюджет быстро. Тянуть не будем. Салтанат Ербуловна, у вас как с подрядчиками, по показателям что?\"}, {\"id\": 38, \"speaker\": \"S7\", \"name\": \"S7\", \"t\": \"02:34\", \"text\": \"По количеству активных договоров все в рамках плана, но есть проблема, участили случаи, когда подрядчики выставляют счета с задержкой, а потом требуют оплату задним числом, из -за этого путаница в бюджете квартала.\"}, {\"id\": 39, \"speaker\": \"S3\", \"name\": \"S3\", \"t\": \"02:44\", \"text\": \"Это системная\"}, {\"id\": 40, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"02:44\", \"text\": \"недисциплинированность или конкретные подрядчики.\"}, {\"id\": 41, \"speaker\": \"S7\", \"name\": \"S7\", \"t\": \"02:46\", \"text\": \"В основном 3 -4 компании постоянно так делают.\"}, {\"id\": 42, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"02:49\", \"text\": \"Тогда прямое решение – пропишите в новых договорах… жесткий срок выставления счета, например, 5 рабочих дней после выполнения работ и штрафную санкцию за нарушение. А по текущим договорам с этими подрядчиками направьте официальное уведомление, что с определенной даты просроченные счета приниматься не будут.\"}, {\"id\": 43, \"speaker\": \"S7\", \"name\": \"S7\", \"t\": \"03:04\", \"text\": \"Хорошо, подготовлю уведомление и обновлю шаблон договора.\"}, {\"id\": 44, \"speaker\": \"S1\", \"name\": \"S1\", \"t\": \"03:07\", \"text\": \"Отлично, коллеги. Подытожим. Батагос Нурлановна, по вашим вопросам, неделя максимум 10 дней на поиск альтернативы, как говорил ранее. Жан -Достолгатович, совещание с подрядчиками, жду справку. Ербалат Мухтарович, вы главные сроки не затяните. Салтанат Ерболовна не больше недели на новый шаблон договора. Все свободны, спасибо.\"}], \"total\": 22, \"next_offset\": null}, \"truncated\": false}",
+        "call_id": "call_csvqoqsv"
+      },
+      "created_at": "2026-09-23T10:59:32.987808Z"
+    },
+    {
+      "seq": 6,
+      "role": "assistant",
+      "kind": "message",
+      "content": {
+        "id": "__fake_id__",
+        "role": "assistant",
+        "type": "message",
+        "status": "completed",
+        "content": [
+          {
+            "text": "{\n  \"outcome\": \"proposal_ready\",\n  \"message\": \"\",\n  \"proposal\": {\n    \"summary\": \"На оперативном совещании обсуждены проблемы отчётности по химическому направлению, инвестиционным проектам и промбезопасности. Сформированы решения по поиску альтернативных поставщиков, работе с подрядчиками и организации обучения персонала.\",\n    \"actions\": [\n      {\n        \"action_id\": \"a1\",\n        \"type\": \"action_item\",\n        \"text\": \"Подготовить претензию к текущему поставщику сырья по договору.\",\n        \"owner_name\": \"Ерлан\",\n        \"owner_speaker_id\": \"S2\",\n        \"deadline_text\": \"до конца недели\",\n        \"deadline_date\": null,\n        \"urgency\": \"низкий\",\n        \"source_segment_ids\": [25, 26]\n      },\n      {\n        \"action_id\": \"a2\",\n        \"type\": \"action_item\",\n        \"text\": \"Найти альтернативного поставщика сырья на 30% объема.\",\n        \"owner_name\": \"Батагос Нурлановна\",\n        \"owner_speaker_id\": \"S2\",\n        \"deadline_text\": \"за две недели\",\n        \"deadline_date\": null,\n        \"urgency\": \"средний\",\n        \"source_segment_ids\": [25]\n      },\n      {\n        \"action_id\": \"a3\",\n        \"type\": \"action_item\",\n        \"text\": \"Собрать совещание с подрядчиками для фиксации еженедельных контрольных точек.\",\n        \"owner_name\": \"Жан-Достолгатович\",\n        \"owner_speaker_id\": \"S5\",\n        \"deadline_text\": \"на этой неделе\",\n        \"deadline_date\": null,\n        \"urgency\": \"средний\",\n        \"source_segment_ids\": [29, 30]\n      },\n      {\n        \"action_id\": \"a4\",\n        \"type\": \"action_item\",\n        \"text\": \"Подготовить справку по итогам совещания с подрядчиками.\",\n        \"owner_name\": \"Жан-Достолгатович\",\n        \"owner_speaker_id\": \"S5\",\n        \"deadline_text\": \"по итогам совещания\",\n        \"deadline_date\": null,\n        \"urgency\": \"низкий\",\n        \"source_segment_ids\": [30]\n      },\n      {\n        \"action_id\": \"a5\",\n        \"type\": \"action_item\",\n        \"text\": \"Организовать дополнительные группы переаттестации или привлечь внешнего тренера.\",\n        \"owner_name\": \"Ербалат Мухтарович\",\n        \"owner_speaker_id\": \"S6\",\n        \"deadline_text\": \"за месяц\",\n        \"deadline_date\": null,\n        \"urgency\": \"средний\",\n        \"source_segment_ids\": [35]\n      },\n      {\n        \"action_id\": \"a6\",\n        \"type\": \"action_item\",\n        \"text\": \"Подготовить смету на дополнительные группы обучения.\",\n        \"owner_name\": \"Ербалат Мухтарович\",\n        \"owner_speaker_id\": \"S6\",\n        \"deadline_text\": \"за неделю\",\n        \"deadline_date\": null,\n        \"urgency\": \"низкий\",\n        \"source_segment_ids\": [36]\n      },\n      {\n        \"action_id\": \"a7\",\n        \"type\": \"action_item\",\n        \"text\": \"Подготовить новый шаблон договора с жестким сроком выставления счета и штрафной санкцией.\",\n        \"owner_name\": \"Салтанат Ербуловна\",\n        \"owner_speaker_id\": \"S7\",\n        \"deadline_text\": \"не больше недели\",\n        \"deadline_date\": null,\n        \"urgency\": \"средний\",\n        \"source_segment_ids\": [42, 43]\n      },\n      {\n        \"action_id\": \"a8\",\n        \"type\": \"action_item\",\n        \"text\": \"Направить официальное уведомление о непринятии просроченных счетов текущим подрядчикам.\",\n        \"owner_name\": \"Салтанат Ербуловна\",\n        \"owner_speaker_id\": \"S7\",\n        \"deadline_text\": \"не больше недели\",\n        \"deadline_date\": null,\n        \"urgency\": \"средний\",\n        \"source_segment_ids\": [42, 43]\n      }\n    ],\"evidence\": [],\"assumptions\": [],\"expected_effects\": [],\"decisions\": [\"Поиск альтернативного поставщика сырья на 30% объема.\", \"Сбор совещания с подрядчиками для фиксации еженедельных контрольных точек.\", \"Организация дополнительных групп переаттестации или привлечение внешнего тренера.\", \"Включение в новые договоры жесткого срока выставления счета и штрафной санкции.\"]},\"missing_fields\": [],\"blocking_constraints\": []}",
+            "type": "output_text",
+            "logprobs": [],
+            "annotations": []
+          }
+        ],
+        "provider_data": {
+          "model": "protokol-qwen3.5:4b",
+          "response_id": "chatcmpl-444"
+        }
+      },
+      "created_at": "2026-09-23T10:59:32.987808Z"
+    },
+    {
+      "seq": 7,
+      "role": "assistant",
+      "kind": "final_output",
+      "content": {
+        "message": "",
+        "outcome": "proposal_ready",
+        "proposal": {
+          "actions": [
+            {
+              "text": "Подготовить претензию к текущему поставщику сырья по договору.",
+              "type": "action_item",
+              "urgency": "низкий",
+              "action_id": "a1",
+              "owner_name": "Ерлан",
+              "deadline_date": null,
+              "deadline_text": "до конца недели",
+              "owner_speaker_id": "S2",
+              "source_segment_ids": [
+                25,
+                26
+              ]
+            },
+            {
+              "text": "Найти альтернативного поставщика сырья на 30% объема.",
+              "type": "action_item",
+              "urgency": "средний",
+              "action_id": "a2",
+              "owner_name": "Батагос Нурлановна",
+              "deadline_date": null,
+              "deadline_text": "за две недели",
+              "owner_speaker_id": "S2",
+              "source_segment_ids": [
+                25
+              ]
+            },
+            {
+              "text": "Собрать совещание с подрядчиками для фиксации еженедельных контрольных точек.",
+              "type": "action_item",
+              "urgency": "средний",
+              "action_id": "a3",
+              "owner_name": "Жан-Достолгатович",
+              "deadline_date": null,
+              "deadline_text": "на этой неделе",
+              "owner_speaker_id": "S5",
+              "source_segment_ids": [
+                29,
+                30
+              ]
+            },
+            {
+              "text": "Подготовить справку по итогам совещания с подрядчиками.",
+              "type": "action_item",
+              "urgency": "низкий",
+              "action_id": "a4",
+              "owner_name": "Жан-Достолгатович",
+              "deadline_date": null,
+              "deadline_text": "по итогам совещания",
+              "owner_speaker_id": "S5",
+              "source_segment_ids": [
+                30
+              ]
+            },
+            {
+              "text": "Организовать дополнительные группы переаттестации или привлечь внешнего тренера.",
+              "type": "action_item",
+              "urgency": "средний",
+              "action_id": "a5",
+              "owner_name": "Ербалат Мухтарович",
+              "deadline_date": null,
+              "deadline_text": "за месяц",
+              "owner_speaker_id": "S6",
+              "source_segment_ids": [
+                35
+              ]
+            },
+            {
+              "text": "Подготовить смету на дополнительные группы обучения.",
+              "type": "action_item",
+              "urgency": "низкий",
+              "action_id": "a6",
+              "owner_name": "Ербалат Мухтарович",
+              "deadline_date": null,
+              "deadline_text": "за неделю",
+              "owner_speaker_id": "S6",
+              "source_segment_ids": [
+                36
+              ]
+            },
+            {
+              "text": "Подготовить новый шаблон договора с жестким сроком выставления счета и штрафной санкцией.",
+              "type": "action_item",
+              "urgency": "средний",
+              "action_id": "a7",
+              "owner_name": "Салтанат Ербуловна",
+              "deadline_date": null,
+              "deadline_text": "не больше недели",
+              "owner_speaker_id": "S7",
+              "source_segment_ids": [
+                42,
+                43
+              ]
+            },
+            {
+              "text": "Направить официальное уведомление о непринятии просроченных счетов текущим подрядчикам.",
+              "type": "action_item",
+              "urgency": "средний",
+              "action_id": "a8",
+              "owner_name": "Салтанат Ербуловна",
+              "deadline_date": null,
+              "deadline_text": "не больше недели",
+              "owner_speaker_id": "S7",
+              "source_segment_ids": [
+                42,
+                43
+              ]
+            }
+          ],
+          "summary": "На оперативном совещании обсуждены проблемы отчётности по химическому направлению, инвестиционным проектам и промбезопасности. Сформированы решения по поиску альтернативных поставщиков, работе с подрядчиками и организации обучения персонала.",
+          "evidence": [],
+          "decisions": [
+            "Поиск альтернативного поставщика сырья на 30% объема.",
+            "Сбор совещания с подрядчиками для фиксации еженедельных контрольных точек.",
+            "Организация дополнительных групп переаттестации или привлечение внешнего тренера.",
+            "Включение в новые договоры жесткого срока выставления счета и штрафной санкции."
+          ],
+          "assumptions": [],
+          "expected_effects": []
+        },
+        "missing_fields": [],
+        "blocking_constraints": []
+      },
+      "created_at": "2026-09-23T10:59:32.987808Z"
+    }
+  ]
+}

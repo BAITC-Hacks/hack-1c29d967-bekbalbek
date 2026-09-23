@@ -1,0 +1,12 @@
+{
+  "sample": "backend/samples/sovechanie_1.mp3",
+  "audio_seconds": 274.25,
+  "audio_sha256": "0f18f11a6f65f9a2bad6497f387b224c775885a03a811edf3fb15c5238db6f54",
+  "gpu_pipeline_seconds": 86.7263306320001,
+  "gpu_asr_seconds": 25.14586603099997,
+  "cpu_pipeline_seconds": 522.1621810229999,
+  "gpu": "NVIDIA RTX 3060 Laptop, 6 GB; ASR CUDA, diarization CPU",
+  "cpu": "AMD Ryzen 5 5600H, ASR int8",
+  "scope": "decode, model loading, VAD, language routing, ASR, model unloading, diarization, alignment; excludes LLM, database, export",
+  "source": "Local measurements on 2026-09-23; practical wall times, not an isolated benchmark"
+}

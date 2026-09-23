@@ -1,0 +1,26 @@
+{
+  "audio": "sovechanie_1.mp3",
+  "audio_sha256": "0f18f11a6f65f9a2bad6497f387b224c775885a03a811edf3fb15c5238db6f54",
+  "audio_seconds": 274.25,
+  "pipeline_seconds": 522.1621810229999,
+  "device": "cpu",
+  "compute_type": "int8",
+  "window_max_seconds": 10.0,
+  "segments": 22,
+  "speaker_labels": [
+    "S1",
+    "S2",
+    "S4",
+    "S5",
+    "S6"
+  ],
+  "languages": [
+    "ru"
+  ],
+  "provenance": {
+    "enabled": true,
+    "blocked_external_connections": 0
+  },
+  "python": "3.12.13",
+  "scope": "process_file: decode + ASR model load/VAD/LID/transcription + model unload + CPU diarization + alignment; no LLM/database/export"
+}

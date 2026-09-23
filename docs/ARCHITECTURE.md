@@ -1,71 +1,89 @@
-# Architecture
+# Архитектура Protokol
 
-One repository, one FastAPI process, one PostgreSQL database, one Vite/React frontend that talks only to the API.
+Protokol обрабатывает запись совещания локально, сохраняет стенограмму с говорящими и предлагает черновик поручений. Подтверждение пользователя отдельно запускает сохранение протокола и проверку результата.
 
+```text
+Браузер (React) -- HTTP / SSE --> FastAPI -- asyncpg --> PostgreSQL
+                                  |
+MP3/WAV/M4A/MP4 -------------------+
+                                  v
+                         decode -> mono 16 kHz
+                                  v
+                     Silero VAD -> окна до 10 с
+                                  v
+                        определение ru / kk / en
+                         /                     \
+               ru/en Whisper turbo       kk Whisper fine-tune
+                         \                     /
+                          слова + временные метки
+                                  |
+                     sherpa-onnx: сегменты говорящих
+                                  v
+                   пересечение слов с сегментами -> S1, S2...
+                                  v
+                        стенограмма в PostgreSQL
+                                  |
+                  +---------------+----------------+
+                  |                                |
+          Docker: scripted:auto             dev на хосте: Qwen
+          до 3 кандидатов                    Ollama :11434/v1
+                  |                                |
+                  +---- инструменты чтения --------+
+                                  v
+                       предложение + проверка ссылок
+                                  v
+                        пользователь подтверждает
+                                  v
+                    транзакция -> проверка сохранения
+                                  v
+                       протокол -> PDF / DOCX
 ```
-frontend (React)    ──HTTP/SSE──▶  backend (FastAPI)  ──asyncpg──▶  PostgreSQL
-                                                 │
-                                                 ├─ app/core      domain-independent runtime
-                                                 ├─ app/domain    REPLACEABLE business module
-                                                 └─ OpenAI Agents SDK (model calls; key stays on the server)
-```
 
-## Backend layout
+## Режимы запуска
 
-```
-backend/
-├── app/
-│   ├── main.py            FastAPI app factory, lifespan (mark interrupted runs), routers
-│   ├── config.py          Settings from environment (pydantic-settings)
-│   ├── db/
-│   │   ├── engine.py      async engine + session factory (one session per request / task)
-│   │   ├── base.py        DeclarativeBase
-│   │   └── models.py      core tables: runs, run_events, run_messages, proposals, applications, actions
-│   ├── core/
-│   │   ├── contracts.py   DomainModule interface + shared Pydantic types (AgentOutput, ValidationReport, ...)
-│   │   ├── events.py      event types, persistence, in-process broadcast for SSE
-│   │   ├── tooling.py     wraps domain tools: timeout, retries, bounded output, structured errors, events
-│   │   ├── agent_runtime.py  builds the Agent and runs it with limits (SDK Runner owns the loop)
-│   │   ├── run_service.py analysis pipeline: agent → parse → validate → bounded revision → persist
-│   │   ├── apply_service.py apply pipeline: stale check → transactional execution → verification
-│   │   ├── run_registry.py in-process background task registry
-│   │   └── errors.py      typed application errors mapped to HTTP
-│   ├── api/               routers + request/response schemas + SSE endpoint
-│   └── domain/            the replaceable module (see docs/SWAPPING_THE_DOMAIN.md)
-├── alembic/               migrations (async env)
-├── evals/                 scenario runner (scripted model by default, live model optional)
-├── scripts/               seed
-└── tests/
-```
+Docker запускает CPU-распознавание и `scripted:auto`: Ollama не требуется, но локальные речевые модели нужны. Этот режим проверяет загрузку, распознавание, цитаты, подтверждение и экспорт; он не заменяет языковую модель и может вернуть меньше трёх поручений.
 
-## Execution flow
+Полная генерация через Qwen работает в dev-процессе на хосте с локальным Ollama. Endpoint строго `http://localhost:11434/v1`, модель `protokol-qwen3.5:4b` создаётся командой `make llm` с контекстом 16384 токена. Доступ контейнера к Ollama хоста не настроен. Подробности: [LOCAL_LLM.md](LOCAL_LLM.md).
 
-1. `POST /api/runs` validates the body against the domain `CaseInput` model, stores the run (`queued`), and starts a background task in the same process.
-2. The task marks the run `analyzing`, emits `run_started`, and calls `Runner.run` with the domain agent. Every tool call is wrapped by `core/tooling.py`, which emits `tool_started` / `tool_finished` / `tool_failed`, enforces per-tool timeouts, retries transient read failures, bounds result size, and returns structured errors to the model instead of raising.
-3. The agent returns `AgentOutput` (`proposal_ready` | `needs_input` | `infeasible`). The backend never trusts model claims about success; it only stores what the model said.
-4. For `proposal_ready` the backend runs `domain.validate_proposal` (deterministic rules + referenced-record existence). Failing validation stores the proposal as `rejected`, emits `validation_failed`, and allows **one** bounded revision: the same conversation continues with the concrete validation errors. The revised proposal is validated again.
-5. A validated proposal is stored immutably as `proposals(run_id, version)` with a `basis_fingerprint` (hash of the records it depends on) and a `snapshot_before`. The run becomes `proposed` and the agent invocation ends. Nothing waits for the user.
-6. `POST /api/runs/{id}/apply` binds approval to `(proposal_id, version)`. It inserts an `applications` row (unique per proposal → duplicate requests get `409 duplicate_apply`), recomputes the fingerprint and re-validates (`409 stale_proposal` on mismatch), then executes every action inside **one transaction** with a unique `actions.action_key`. Afterwards it reads the committed state back through `domain.verify_outcome` and records `verified` or `failed`.
-7. Events are persisted to `run_events` (per-run sequence) and broadcast in-process; the SSE endpoint replays from the persisted log and then tails live events, so reconnects with `Last-Event-ID` never lose anything.
+## Компоненты
 
-## Reliability
+| Каталог | Назначение |
+|---|---|
+| `backend/app/speech` | Декодирование, VAD, выбор модели по языку, распознавание, диаризация, привязка слов к говорящим, сроки, защита соединений |
+| `backend/app/domain` | Встречи, стенограммы, инструменты протоколиста, схемы поручений, валидация, сохранение и экспорт |
+| `backend/app/core` | Выполнение агента, версии предложений, события, подтверждение, проверка результата |
+| `backend/app/api` | HTTP/SSE, ограничения запросов, состояние сервиса |
+| `backend/alembic` | Миграции PostgreSQL |
+| `frontend/src/domain` | Представление совещания и связь с общим интерфейсом через `DomainAdapter` |
+| `evaluation/organizer` | Отдельные исходные материалы и ручная оценка; приложение их не читает |
 
-- `AGENT_MAX_TURNS`, `AGENT_RUN_TIMEOUT_SECONDS`, `TOOL_TIMEOUT_SECONDS`, `TOOL_MAX_RETRIES`, `TOOL_RESULT_MAX_CHARS`, `AGENT_MAX_REVISIONS` are environment variables.
-- Every tool call and every phase transition is an event with a timestamp and payload, so failures can be inspected after the fact.
-- On startup the app marks runs still in `queued`, `analyzing` or `applying` as `interrupted`. In-memory tasks do not resume.
-- Sessions: each request and each background task opens its own session. Transactions are short; no transaction is open while awaiting the model.
+`DomainModule` связывает схемы, инструменты и функции обработки встречи с исполнителем агента. `DomainAdapter` связывает данные встречи с интерфейсом: таблицами, цитатами и предлагаемыми изменениями. Контракт HTTP описан в [API.md](API.md).
 
-## Frontend (`frontend/`)
+## Обработка записи
 
-React 19 + TypeScript + Vite, no router or state library. Hash routes: `#/` landing, `#/app` dashboard,
-`#/app/example/<id>` a case, `#/app/run/<id>` a specific run.
+Загрузка сохраняет файл в `backend/media/` и создаёт `Meeting(status="uploaded")`. Отдельный запрос запускает фоновую задачу, которая переводит встречу в `transcribing`. Вычисления выполняются вне цикла HTTP, в потоке; блокировка в процессе ограничивает обработку одной записью одновременно.
 
-- `src/api/` — `types.ts` mirrors docs/API.md; `client.ts` is a fetch wrapper that turns every error into `ApiError(code, message, status, details)`.
-- `src/dashboard/useRun.ts` — the run controller: creates a run, opens the SSE stream, reduces events into a timeline, refreshes the run detail on milestones, applies. Terminal runs are replayed from `GET /events/list` instead of a stream.
-- `src/dashboard/model/` — pure functions and the domain contract: `adapter.ts` (`DomainAdapter` — `key`, `beforeAfterLabel`, the optional `DemoPanel`, `tableFor`, `changesFor`, `beforeAfter`, `describeEvidence`, `applyMissingField`), `phase.ts` (status → phase, journey progress, apply gate), `timeline.ts` (event reducer), `runs.ts` (which example a run belongs to), `changes.ts` (generic table/change types).
-- `src/dashboard/components/` — top bar, case list, case header + stepper, request card, generic changes table, status cards, agent panel (activity, proposed changes, evidence drawer, apply panel).
-- `src/domain/` — the only folder that knows the sample domain's field names: `dispatch.ts` implements `DomainAdapter` (table columns, change rows, before/after, evidence lookup, how a missing field maps into the input, plus `beforeAfterLabel` and `DemoPanel`), `DemoControls.tsx` (the sample `DemoPanel` — the "change the data before applying" demo button) and `api.ts` (domain-only endpoints, e.g. `patchWorker`, calling `api.request`).
-- `src/landing/` + `src/config.ts` — marketing page; all copy lives in `config.ts`.
+Распознавание использует только локальные файлы моделей. `STT_DEVICE=cpu` выбирает `int8`; `auto` пытается использовать CUDA, при недоступности переключается на CPU. Короткие окна могут объединяться с предыдущими для определения языка. Переключение языка внутри одного окна не решено. После ASR модели освобождаются; диаризация работает на CPU.
 
-Tests: vitest + Testing Library for the pure models, the controller (fake API + fake EventSource) and the dashboard
-flows; Playwright (`frontend/e2e/`) drives the real stack end to end in scripted model mode.
+Слова получают метку говорящего по максимальному временному пересечению с результатом диаризации. Короткие вставки между одинаковыми метками сглаживаются. При отсутствии результата диаризации вся речь получает `S1`. Это позволяет закончить обработку, но не доказывает, что в записи один человек. Имена говорящих редактируются пользователем; автоматического надёжного установления личности нет.
+
+Результат сохраняется в `MeetingSegment` и `MeetingSpeaker`, статус меняется на `ready`. При ошибке — `failed` с сообщением. Повторная обработка уже подтверждённого протокола запрещена, чтобы не менять идентификаторы цитат.
+
+## Предложение и подтверждение
+
+1. `POST /api/runs` создаёт запуск для готовой встречи. Инструменты читают данные через БД, их вызовы сохраняются как события.
+2. Адаптер Qwen сначала требует `get_meeting`, затем `read_transcript`; после успешного чтения последней страницы переключает ответ на структурированный JSON и отключает вызовы инструментов. `search_transcript` и `resolve_deadline` зарегистрированы, но этот маршрут Qwen не вызывает их после чтения. Сроки дополнительно нормализуются сервером.
+3. Проверяются схема, принадлежность сегментов встрече, факт чтения процитированных данных, метки говорящих и сроки. Неизвестная дата остаётся `null`. Несовпадающий с цитатами поручивший может быть сброшен в `null` с предупреждением; имя исполнителя сохраняется.
+4. Предложение получает версию и отпечаток исходных данных. Статус `proposed` означает готовность к проверке пользователем, а не подтверждённый протокол.
+5. `POST /api/runs/{id}/apply` принимает конкретные `proposal_id` и `version`, повторяет проверки, сравнивает отпечаток, сохраняет протокол и поручения в транзакции и читает их обратно. Успешная проверка даёт `verified`.
+6. Экспорт получает последний подтверждённый протокол встречи. PDF использует вложенные шрифты DejaVu, DOCX — таблицы и абзацы с Unicode.
+
+`owner_name` — исполнитель; `owner_speaker_id` — метка человека, который дал поручение. Эти поля не взаимозаменяемы. Проверка существования цитаты не доказывает её смысловую поддержку для каждого поля. Точность имён, изменившиеся сроки, условия и дубликаты требуют ручной проверки: [аудит](../evaluation/organizer/accuracy-summary.md).
+
+## Данные и ограничения
+
+Основные таблицы: `meetings`, `meeting_speakers`, `meeting_segments`, `protocols`, `action_items`; таблицы запусков хранят предложения, сообщения, применения и события. Файлы моделей и загруженных записей не входят в Git. События доступны через SSE и как JSON; это не отдельная долговечная очередь обработки. После перезапуска незавершённые запуски не продолжаются автоматически.
+
+SDK-трассировка отключена. Python socket guard запрещает внешние соединения через перехваченные интерфейсы и публикует счётчик в `/api/health`. Это дополнительная защита приложения, а не сетевой экран или полный аудит всех системных соединений. Внешние сервисы не используются для обработки аудио и текста; скачивание зависимостей и моделей выполняется отдельно до обработки.
+
+Система рассчитана на локальную демонстрацию: нет авторизации, интеграции с СЭД, автоматической рассылки и API изменения статуса поручений. Надёжность на длинных записях, перекрывающейся речи и точная идентификация говорящих не гарантированы.

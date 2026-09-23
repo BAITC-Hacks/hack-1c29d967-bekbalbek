@@ -1,179 +1,164 @@
-# Agent Workspace — reusable AI-agent application foundation
+# Protokol
 
-![ci](https://github.com/BAITC-Hacks/hack-1c29d967-bekbalbek/actions/workflows/ci.yml/badge.svg)
+Локальный помощник для секретаря совещания и руководителя: превращает запись встречи в стенограмму с говорящими и проект протокола — саммари, решения, поручения, ответственные и сроки. Каждое поручение связано с фрагментом стенограммы. Человек проверяет проект, подтверждает его и скачивает PDF или DOCX. Аудио и текст обрабатываются на машине пользователя.
 
-A complete, working foundation for a business-case agent app that you adapt in one replaceable module:
-the user submits a goal, an agent investigates with typed tools, returns a structured proposal (or asks for
-missing input, or explains why the task is infeasible), the backend validates the proposal against deterministic
-business rules, the user applies it with one click, and the backend verifies the resulting database state.
-Every tool call and state change streams to the UI as a persisted event.
+## Что реализовано
 
-Sample domain (clearly marked as sample data): **field-service dispatch** — assign open jobs to technicians under
-skill, capacity, deadline, availability and zone rules.
-
-| Layer | Stack |
-|---|---|
-| Frontend | React 19, TypeScript, Vite, plain CSS design tokens ([docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)), vitest + Testing Library, Playwright |
-| Backend | FastAPI, OpenAI Agents SDK 0.22, Pydantic 2, SQLAlchemy 2 async + asyncpg, Alembic, sse-starlette, pytest |
-| Database | PostgreSQL 16 (Docker Compose, health check, persistent volume) |
-
-## Quick start
-
-Prerequisites: Docker, [uv](https://docs.astral.sh/uv/), Node 22 + [pnpm](https://pnpm.io), `curl` (used by `make stack`
-and the smoke script), `jq` for the smoke script. Python 3.12 is installed by uv automatically. The Docker-only path
-(`make stack`) needs only Docker and curl.
-
-```bash
-cp .env.example .env              # scripted demo out of the box; add OPENAI_API_KEY + a real OPENAI_MODEL for the live model
-make install web-install           # backend (uv sync) + frontend (pnpm install)
-make demo                          # docker compose up db → alembic upgrade head → seed sample data
-make api                           # terminal 1: FastAPI on http://localhost:8000 (OpenAPI UI at /docs, also on :8080 via the stack)
-make web                           # terminal 2: Vite on http://localhost:5173 (proxies /api to :8000)
-```
-
-Open http://localhost:5173 — the landing page; "Open the demo" leads to the workspace at `#/app`. Pick a case on the
-left, press **Run analysis**, watch the tool calls stream in, review the proposed changes overlaid on the table,
-acknowledge any warning, press **Apply proposal**, and read the verification with the before → after load table.
-`make smoke` does the same flow with curl.
-
-`make smoke` starts example 1, prints every persisted event (real tool calls with their labels), applies the proposal,
-shows the verification summary, tries a duplicate apply, and reads the resulting database state. `POST /api/domain/reset`
-makes it repeatable.
-
-### No API key? Deterministic scripted mode
-
-```bash
-OPENAI_MODEL=scripted:auto make api
-```
-
-The model is replaced by canned conversations (`backend/app/domain/scripts.py`); tools, validation, execution and
-verification are the real thing. `scripted:auto` picks the right script per case (`happy`, `needs_input`,
-`infeasible`, `reduced_capacity`). Other keys: `revision`, `tool_failure`, `model_error`. This is also the on-stage
-fallback if the model provider is down.
-
-### Everything in Docker (no local Python or Node)
-
-```bash
-make stack        # builds api + web images, starts db + api + web, waits for health
-# then open http://localhost:8080 in a browser
-make stack-down   # stop everything (the database volume is kept)
-```
-
-The containers use the `OPENAI_API_KEY` and `OPENAI_MODEL` values from `.env` (compose substitutes them) — `.env.example`
-ships in scripted mode, so `cp .env.example .env && make stack` demos without a key; to run without a key set
-`OPENAI_MODEL=scripted:auto` in `.env` (or leave both unset, in which case compose defaults the model to
-`scripted:auto`). Every `make stack` applies migrations and reloads the sample data, so a second `make stack` resets
-what the first session produced; `SEED_ON_START=0 make stack` keeps existing data (seeding runs only when
-`SEED_ON_START` is `1`, the default).
-
-## Demo script (what the API can show)
-
-1. **Normal path** — example 1 (`GET /api/domain/examples`) → `POST /api/runs` → 4 real tool calls (`get_case`,
-   `lookup_rules`, `find_resources`, `simulate_plan`) → proposal with 6 assignments, 1 zone warning → `POST .../apply` → verified.
-2. **Changed condition** — example 4 ("Chen at half capacity") → a different plan (j-104 moves to Ana on 26 Sep).
-3. **Missing information** — example 2 → `needs_input` names `jobs.j-107.required_skill`; re-post with `input.job_overrides`.
-4. **Infeasible** — example 3 → blocking constraints with rule ids and record refs.
-5. **Safety** — example 1 → before applying, `PATCH /api/domain/workers/w-chen {"unavailable_dates": ["2026-09-24"]}`
-   → apply → `409 stale_proposal`. Apply twice → `409 duplicate_apply`. Restart the API mid-run → run marked `interrupted`.
-
-## Commands
-
-| Command | What it does |
-|---|---|
-| `make up` / `make down` | Start / stop PostgreSQL (data volume kept) |
-| `make stack` / `make stack-down` | Whole stack in Docker on http://localhost:8080 |
-| `make migrate` | `alembic upgrade head` |
-| `make seed` | Reset the sample dataset |
-| `make api` | Run the backend |
-| `make api-demo` | Backend without auto-reload, for live demos (a file save cannot interrupt a run) |
-| `make demo-offline` | Backend in scripted mode, no API key needed |
-| `make smoke` | curl walkthrough of the whole flow |
-| `make test` | Backend tests (pytest, needs the DB) |
-| `make eval` | Evaluation suite, scripted model (`EVAL_MODEL=live make eval` for the real model) |
-| `make web` / `make web-build` | Frontend dev server / production build into `frontend/dist` |
-| `make test-web` | Frontend unit tests (vitest, no backend needed) |
-| `make e2e` | Playwright flow against the running stack (landing, happy path, needs input, infeasible, stale proposal) |
-| `make lint` | ruff + eslint |
-
-Backend tests use a separate `agent_workspace_test` database and evals use `agent_workspace_eval`; both are created
-automatically on the same server.
-
-## Configuration (`.env`)
-
-| Variable | Default | Meaning |
+| Требование | Статус | Проверка |
 |---|---|---|
-| `DATABASE_URL` | `postgresql+asyncpg://agent:agent@localhost:5433/agent_workspace` | asyncpg URL (host port 5433) |
-| `OPENAI_API_KEY` | — | Backend only, never sent to the browser |
-| `OPENAI_MODEL` | `gpt-5.4-mini` | Model name, or `scripted:<name>` (`.env.example` ships `scripted:auto`) |
-| `AGENT_MAX_TURNS` | `12` | Max model turns per invocation |
-| `AGENT_RUN_TIMEOUT_SECONDS` | `120` | Whole-run timeout |
-| `TOOL_TIMEOUT_SECONDS` / `TOOL_MAX_RETRIES` | `15` / `2` | Per-tool timeout and retries for transient failures |
-| `TOOL_RESULT_MAX_CHARS` | `6000` | Tool results are truncated beyond this |
-| `AGENT_MAX_REVISIONS` | `1` | Bounded revisions after a validation failure |
-| `CORS_ORIGINS` | `http://localhost:5173` | Comma separated |
+| Распознавание речи | ✅ Загрузка аудио/видео, локальная обработка, таймкоды слов | `tests/speech/test_asr.py`, `POST /api/domain/meetings/{id}/transcribe` |
+| Русский язык | ✅ Проверен на двух записях организаторов; остаются ошибки имён | [Аудит](evaluation/organizer/accuracy-summary.md) |
+| Казахский язык | ⚠️ Отдельная модель подключена; короткие реплики иногда распознаются как русские | `tests/speech/test_asr.py`, [разбор смешанной речи](evaluation/mixed-language.md) |
+| Смешанная RU/KK-речь | ⚠️ Выбор языка по окнам; переключение внутри предложения не решено | `app/speech/asr.py` |
+| Поручения, ответственные, сроки | ⚠️ Qwen извлекает все группы в двух проверенных встречах, но допускает содержательные ошибки | `tests/domain/test_service.py`, [аудит](evaluation/organizer/accuracy-summary.md) |
+| Диаризация и привязка к людям | ⚠️ Говорящие размечены метками; имена задаются вручную в UI, автоматической идентификации нет | `tests/speech/test_diarize.py`, `tests/speech/test_align.py` |
+| PDF/DOCX | ✅ Экспорт подтверждённого протокола с кириллицей, таблицей и стенограммой | `tests/domain/test_exports.py`, [Docker-проверка](evaluation/docker-smoke.json) |
 
-## How it works
+Пути `app/` и `tests/` в таблице относятся к `backend/`. Статусы поручений в интерфейсе сохраняются только в текущем браузере и не изменяют PDF/DOCX.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (flow, reliability, layout), [docs/API.md](docs/API.md)
-(endpoints + event contract), [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) (UI system) and
-[docs/SWAPPING_THE_DOMAIN.md](docs/SWAPPING_THE_DOMAIN.md) (what to replace for the real case).
+## Как это работает
 
-Key guarantees:
-
-- The agent only reads and simulates. Writes happen in `domain/service.py::execute_actions`, inside one transaction,
-  keyed by unique action ids. Approval is bound to an immutable `(proposal_id, version)`.
-- Before executing, the backend recomputes a fingerprint of the records the proposal depends on and re-validates;
-  changed data → `409 stale_proposal`. A partial unique index allows one live application per proposal →
-  `409 duplicate_apply`, also under concurrency.
-- After executing, `verify_outcome` reads the committed state back; the run is `verified` only if that check passes.
-- Model claims are never trusted: validation results, execution status and verification come from application code.
-- Every event is persisted with a per-run sequence; SSE reconnects with `Last-Event-ID` lose nothing.
-- On restart, in-flight runs are marked `interrupted` (nothing resumes silently).
-
-## Evaluation results
-
-`make eval` (scripted model, n = 9 scenarios, one run each, measured on this machine):
-
-```
-scenario                       ok   status             outcome         violations   state       ms tools
-normal_success                 PASS verified           proposal_ready  -            ok         727     4
-missing_information            PASS needs_input        needs_input     -            ok         192     1
-impossible_constraints         PASS infeasible         infeasible      -            ok         238     2
-tool_failure                   PASS proposed           proposal_ready  -            ok         313     2
-changed_resource_availability  PASS verified           proposal_ready  -            ok         600     4
-duplicate_apply                PASS verified           proposal_ready  -            ok         863     4
-stale_proposal                 PASS proposed           proposal_ready  -            ok         559     4
-bounded_revision               PASS proposed           proposal_ready  -            ok         404     2
-model_failure                  PASS failed             None            -            ok         169     1
-9/9 scenarios passed
+```text
+Запись → ffmpeg, 16 kHz mono → Silero VAD → определение языка окна
+       → RU/EN Whisper turbo или Kazakh Whisper → таймкоды слов
+       → диаризация на CPU → совмещение слов и говорящих → PostgreSQL
+       → инструменты get_meeting / read_transcript → проект протокола
+       → проверка цитат и сроков → подтверждение человеком → PDF / DOCX
 ```
 
-Token usage is 0 in scripted mode; live mode records real usage per run. Live results depend on the model and are
-not reproducible run-to-run — report the actual table from your machine.
+В режиме Qwen агент читает встречу и стенограмму через инструменты, затем возвращает структурированный JSON. Сервер проверяет, что цитаты принадлежат встрече и прочитаны в текущем запуске, сверяет метки говорящих и рассчитывает распознанные относительные сроки от даты встречи. Это не доказывает смысловую правильность каждого поля — проект требует просмотра.
 
-## What to replace for the real business case
+Трассировка SDK отключена. Модели речи открываются только с локального диска. Защита исходящих соединений и счётчик блокировок отображаются в `/api/health`. Это прикладная защита Python, а не независимый сетевой аудит; соединение с локальной базой Docker необходимо для работы приложения.
 
-Everything domain-specific is in `backend/app/domain/` (data models, `CaseInput`, proposal/action schemas, agent
-instructions, tools, rules, executor, verifier, seed, examples, scripts). The contract between it and the rest of the
-app is `DomainModule` in `backend/app/core/contracts.py`. On the frontend the same split is `frontend/src/domain/`
-(`dispatch.ts`: table columns, change rows, before/after, evidence lookup, missing-field mapping) plus the domain types at
-the bottom of `frontend/src/api/types.ts`; the contract is the `DomainAdapter` interface in
-`frontend/src/dashboard/model/adapter.ts` (`beforeAfterLabel` for the before/after table's header, and an optional
-`DemoPanel` component for demo-only controls) — everything else only knows the run/event contract. Domain-only
-endpoints, such as the worker patch the demo panel uses, live in `frontend/src/domain/api.ts` and call `api.request`.
-Landing copy and brand live in `frontend/src/config.ts`. Step-by-step checklist:
-[docs/SWAPPING_THE_DOMAIN.md](docs/SWAPPING_THE_DOMAIN.md).
+## Технологии и модели
 
-Adding capabilities (transcription, image understanding, document retrieval, image generation): add them as separate
-tools in the domain module with explicit typed inputs/outputs; the runtime wraps them with the same timeouts,
-retries, bounded output and events.
+| Компонент | Назначение / размер на диске | Лицензия и источник |
+|---|---|---|
+| `deepdml/faster-whisper-large-v3-turbo-ct2` | RU/EN ASR, около 1,6 GiB | [MIT](https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2) |
+| `shyngys879/kazakh-whisper-large-v3-turbo`, локальный CT2 | Казахский ASR, около 782 MiB | [Apache-2.0](https://huggingface.co/shyngys879/kazakh-whisper-large-v3-turbo) |
+| pyannote segmentation-3.0 ONNX | Сегментация голосов; вместе с ERes2Net около 46 MiB | [MIT, веса](https://huggingface.co/pyannote/segmentation-3.0) |
+| 3D-Speaker ERes2Net ONNX | Представления голосов и кластеризация | [Apache-2.0](https://github.com/modelscope/3D-Speaker/blob/main/LICENSE) |
+| Silero VAD ONNX | Детектор речи, около 632 KiB | [MIT](https://github.com/snakers4/silero-vad/blob/master/LICENSE) |
+| Qwen3.5-4B через Ollama | Живое извлечение протокола, 3,4 GB | [Apache-2.0](https://huggingface.co/Qwen/Qwen3.5-4B) |
+| Qwen3-4B-Instruct-2507 Q4_K_M | Дополнительный локальный вариант, 2,5 GB | [Apache-2.0](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) |
 
-## Repository layout
+`backend/scripts/get_models.sh` получает RU-модель с Hugging Face, VAD и ONNX-модели диаризации из публичных релизов sherpa-onnx. Казахский каталог CT2 предоставляется отдельно: скрипт его не скачивает и не конвертирует. Веса не входят в Git. Лицензия весов pyannote — MIT; среды sherpa-onnx — Apache-2.0.
 
+Основные библиотеки: Python 3.12 (PSF); FastAPI, Pydantic, OpenAI Agents SDK, faster-whisper, CTranslate2, ONNX Runtime, SQLAlchemy, Alembic, python-docx (MIT); asyncpg и sherpa-onnx (Apache-2.0); ReportLab (BSD); React и Vite (MIT), TypeScript (Apache-2.0). PostgreSQL — PostgreSQL License, Ollama — MIT. Лицензия ffmpeg зависит от сборки (LGPL/GPL). Шрифты DejaVu и их уведомление находятся в `backend/app/domain/fonts/`. Код Protokol — [MIT](LICENSE); лицензии моделей и зависимостей действуют отдельно. Версии закреплены в `backend/uv.lock` и `frontend/pnpm-lock.yaml`.
+
+## Архитектура
+
+FastAPI обслуживает загрузку, обработку и экспорт; PostgreSQL хранит встречи, сегменты, говорящих, проекты и подтверждения. React показывает запись, стенограмму, доказательства и результат. `DomainModule` связывает обработку встреч с исполнением агента, а `DomainAdapter` — данные протокола с интерфейсом. Подробности: [архитектура](docs/ARCHITECTURE.md), [API](docs/API.md), [локальный Qwen](docs/LOCAL_LLM.md).
+
+## Установка и запуск
+
+Два пути: **Docker — воспроизводимая демонстрация без LLM; dev — живой локальный Qwen**. В обоих распознавание аудио настоящее и требует весов речи. LLM-путь требует Ollama на хосте и не контейнеризирован.
+
+### Веса речи
+
+Скопируйте предоставленный комплект весов в `backend/models/`:
+
+```text
+backend/models/
+  ru-turbo-ct2/       model.bin, config.json, tokenizer.json,
+                     preprocessor_config.json, vocabulary.json
+  kk-turbo-ct2/       те же пять файлов
+  vad/silero_vad.onnx
+  diarization/sherpa-onnx-pyannote-segmentation-3-0/model.onnx
+  diarization/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx
 ```
-backend/   FastAPI app (app/core = runtime, app/domain = replaceable), alembic/, evals/, tests/, scripts/, Dockerfile
-frontend/  Vite app (src/api = contract, src/dashboard = generic UI, src/domain = replaceable, src/landing), e2e/, Dockerfile
-docs/      architecture, API + event contract, design system, domain-swap guide
-docker-compose.yml, Makefile, .env.example
-.github/workflows/ci.yml  lint + tests for both halves on every push
+
+Комплект занимает около 2,4 GiB. Если уже есть казахский CT2-каталог, остальные публичные веса можно установить через `make install models` (нужны `uv`, Python 3.12 и интернет). Подготовленные модели при обработке сеть не используют. Без казахского каталога `make models` завершится с объяснением; одного клонирования Git для ASR недостаточно.
+
+### Docker: без Ollama
+
+Нужны Docker Engine с Compose, `make`, `curl`, свободные порты 5433 и 8080. Для CLI-проверки нужен `jq`. При первой сборке скачиваются образы и зависимости; требуется место для весов и Python/CUDA-библиотек, даже при CPU-обработке.
+
+```bash
+cp .env.example .env
+# До запуска разместите веса речи в backend/models/.
+OPENAI_MODEL=scripted:auto make stack
+curl -fsS http://localhost:8080/api/health
 ```
+
+Откройте `http://localhost:8080/#/app`. Ожидается `model: scripted:auto`, `models_present: true`, `provenance.enabled: true`. Compose монтирует локальные `models`, `media`, `samples`; ASR работает на CPU. Адрес `http://localhost:11434/v1` нужен для проверки конфигурации при запуске; scripted-режим к нему не обращается. Явное значение `OPENAI_MODEL` исключает влияние настроек оболочки.
+
+### Dev: локальный Qwen
+
+Нужны Python 3.12, `uv`, Node 22, `pnpm`, ffmpeg, Docker для PostgreSQL и Ollama на этой же машине. Установите в Ollama `qwen3.5:4b`, затем:
+
+```bash
+make install
+cd frontend && pnpm install --frozen-lockfile && cd ..
+make demo
+make llm
+OPENAI_MODEL=protokol-qwen3.5:4b make api
+# В другом терминале:
+make web
+```
+
+Откройте `http://localhost:5173/#/app`. `make llm` создаёт локальное имя `protokol-qwen3.5:4b` с контекстом 16 384 токена, переиспользуя установленные веса. Если исходной модели ещё нет: `ollama pull qwen3.5:4b` (загрузка весов, не передача аудио или текста). Подробности — в [LOCAL_LLM.md](docs/LOCAL_LLM.md).
+
+`STT_DEVICE=auto` выбирает CUDA при наличии, иначе CPU; для явного выбора задайте `STT_DEVICE=cpu` или `STT_DEVICE=cuda` перед `make api`. CPU использует int8. На машине с 6 GB VRAM ASR и LLM обрабатываются последовательно.
+
+## Как проверить
+
+### Сначала: демонстрация без языковой модели
+
+1. Запустите Docker-командой выше; Ollama не нужен.
+2. Откройте `http://localhost:8080/#/app` → «Новая запись», выберите `backend/samples/sovechanie_2.mp3`, укажите название и дату `2026-09-23`, нажмите «Загрузить».
+3. Нажмите «Транскрибировать» и дождитесь готовности. На проверенной машине CPU занял **472 секунды (7 мин 52 с)**. Проверьте стенограмму; при необходимости задайте имена в разделе «Говорящие» до формирования проекта.
+4. Нажмите «Сформировать протокол», просмотрите цитаты, затем «Подтвердить протокол» → «Скачать PDF» или «Скачать DOCX».
+
+Scripted-режим выбирает не более трёх цитат с распознанным сроком, без LLM. В проверенном Docker-прогоне записи №2 получилась **одна** строка, статус `verified`, PDF на две страницы. Это проверка всей цепочки, но не полноты извлечения Qwen. [Результаты](evaluation/docker-smoke.json).
+
+CLI-эквивалент загружает новую запись, не сбрасывая существующие встречи:
+
+```bash
+API=http://localhost:8080 make smoke
+```
+
+Ответы, времена, PDF и DOCX сохраняются под `backend/media/verification/`. Отдельные `curl`-запросы — в [API.md](docs/API.md).
+
+### Затем: живая модель
+
+Выполните `make llm`, запустите dev API с `OPENAI_MODEL=protokol-qwen3.5:4b`, проверьте `/api/health` на порту 8000 и повторите шаги в интерфейсе на 5173. CLI: `API=http://localhost:8000 make smoke`. Проверенный Qwen-прогон записи №1 сформировал 11 строк за 30,5 секунды после готовой стенограммы, подтвердился и экспортировался. Число строк может меняться при новом запуске.
+
+Ручная оценка двух организаторских записей: **10/10 и 6/6 групп поручений имеют соответствие**, создано **11 и 8 строк**. Это покрытие групп, не «100% точность»: ошибки перечислены в [accuracy-summary.md](evaluation/organizer/accuracy-summary.md).
+
+```bash
+python3 evaluation/organizer/check_samples.py --source-dir evaluation/organizer/source
+```
+
+Проверка исходников дала `PASS` для обеих записей: четыре размера/SHA-256 совпали, **10 и 6 групп** совпали с таблицами DOCX. Она проверяет происхождение файлов и эталонные строки, а не качество ASR/Qwen. Исходные протоколы не подаются модели.
+
+Для записи №1 длительностью **274,25 с** речевой конвейер занял **86,726 с на GPU (≈87 с)** и **522,162 с на CPU (≈522 с)**. GPU — RTX 3060 Laptop 6 GB; CPU — Ryzen 5 5600H. Время включает загрузку моделей, VAD, ASR, диаризацию и совмещение, исключает генерацию протокола, БД и экспорт. Диаризация всегда на CPU. [Измерения](evaluation/performance/summary.json).
+
+```bash
+cd backend
+uv run pytest -q
+uv run ruff check .
+cd ../frontend
+pnpm lint
+pnpm build
+```
+
+Последняя проверка backend: **199 passed**; Ruff и ESLint чистые. Предыдущий прогон дал 222 passed; после удаления Docker-подключения к LLM удалены и 23 соответствующие проверки. Тестам API нужна PostgreSQL на 5433 (отдельная `agent_workspace_test`); тесты с маркером `models` требуют локальных весов и без них пропускаются. Проверка без ASR: `uv run pytest -q -m 'not models'`.
+
+## Данные и интеграции
+
+Записи `sovechanie_1.mp3` и `sovechanie_2.mp3` предоставлены организаторами. Два смешанных RU/KK/EN-файла записаны командой. Загруженные записи остаются в `backend/media/`, результаты — в локальной PostgreSQL. Облачных API для аудио и текста нет; СЭД, почта, Teams и Zoom не подключены. Установка зависимостей и публичных весов требует интернета, обработка — нет. `blocked_external_connections: 0` означает отсутствие зарегистрированных блокировок, а не доказательство отсутствия любого сетевого трафика.
+
+## Ограничения
+
+- При аудите обнаружены **один неверный исполнитель, один дубликат, искажённые распознаванием имена, некоторые цитаты на другое высказывание и пропущенное позднее изменение срока**. Проект требует проверки этих полей.
+- Короткие казахские реплики иногда маршрутизируются в русскую модель; возможна потеря регистра и пунктуации. Переключение языка внутри фразы и наложение голосов обрабатываются ненадёжно.
+- Диаризация пакетная, не потоковая; возможны объединённые реплики и лишние метки. Имена говорящих появляются только после ручного переименования в UI. Ответственный из поручения не используется для автоматического называния голоса.
+- Сроки считаются от указанной даты встречи. Для формулировок только с неделей используется соглашение о пятнице; неразобранная дата остаётся пустой. Позднее уточнение не всегда заменяет ранний срок.
+- У 4B-модели ограничен контекст; длинная встреча может не поместиться. Повреждённый JSON отклоняется. Приложение формирует проект, а не юридически выверенный итог.
+- Статусы поручений локальны для браузера. Редактирование поручений через API и совместные статусы не реализованы. Подтверждённая запись защищена от повторной транскрипции.
+- WER и DER не заявляются: нет вручную проверенной временной разметки, а протоколы организаторов местами расходятся с записью. Приложение проверено как локальная демонстрация, без многопользовательской авторизации.
+
+## Дорожная карта
+
+Улучшить сохранение финальных сроков, устранение повторов и смысловую проверку цитат; собрать размеченный набор казахской и смешанной речи; добавить серверные статусы и редактирование поручений. Следующие интеграции: СЭД, напоминания и рассылка ответственным, голосовая идентификация с согласия участников, Teams/Zoom. Эти функции пока не реализованы.

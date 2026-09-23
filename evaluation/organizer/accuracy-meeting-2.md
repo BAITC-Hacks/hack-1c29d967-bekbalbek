@@ -1,6 +1,6 @@
 # Meeting 2 accuracy audit
 
-Compared the complete supplied reference `/home/datamata/Downloads/Протокол_совещания№2.docx.md` with `accuracy-2-meeting.json` and `accuracy-2-run.json`. Meeting date: 2026-09-23. Run: `22a1cb44-3694-4b95-a54f-7bf44ae7fa46`, model `protokol-qwen3.5:4b`, status `proposed`, 8 actions, 2 tool calls, 28.736 seconds. Audio duration recorded by the pipeline: 206.03125 seconds. This is a proposal audit, not a confirmation/export test. No human listening was performed in this audit. A second independent cached Whisper-medium CPU transcription of the closing 187–206 s clip, saved in `meeting-2-deadlines-second-pass.txt`, corroborates the material deadline differences in the primary ASR.
+Compared the complete supplied reference `Протокол_совещания№2.docx.md` with [accuracy-2-meeting.json](accuracy-2-meeting.json) and [accuracy-2-run.json](accuracy-2-run.json). Meeting date: 2026-09-23. Run: `22a1cb44-3694-4b95-a54f-7bf44ae7fa46`, model `protokol-qwen3.5:4b`, status `proposed`, 8 actions, 2 tool calls, 28.736 seconds. Audio duration recorded by the pipeline: 206.03125 seconds. This is a proposal audit, not a confirmation/export test. No human listening was performed in this audit. A second independent cached Whisper-medium CPU transcription of the closing 187–206 s clip, saved in `meeting-2-deadlines-second-pass.txt`, corroborates the material deadline differences in the primary ASR.
 
 ## Scoring method and result
 

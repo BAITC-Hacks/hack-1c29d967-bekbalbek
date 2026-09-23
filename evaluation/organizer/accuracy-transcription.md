@@ -1,8 +1,8 @@
 # Transcription and reference coverage audit
 
-Audit date: 2026-09-23. Inputs: the supplied `Протокол_совещания№1.docx.md` and `Протокол_совещания№2.docx.md`, compared with live REST transcripts saved beside this report as `accuracy-transcript-1.json` and `accuracy-transcript-2.json`. Both meetings had status `ready`. Audio hashes were checked separately by the lead and match the supplied recordings. This review does not run recognition again or change product data.
+Audit date: 2026-09-23. Inputs: the supplied `Протокол_совещания№1.docx.md` and `Протокол_совещания№2.docx.md`, compared with live REST transcripts saved beside this report as [accuracy-transcript-1.json](accuracy-transcript-1.json) and [accuracy-transcript-2.json](accuracy-transcript-2.json). Both meetings had status `ready`. Audio hashes were checked separately by the lead and match the supplied recordings. This review does not run recognition again or change product data.
 
-The reference documents are narrative transcripts plus summaries, not timestamped, independently checked acoustic annotations. Differences below are **observed reference/transcript divergences**, not proven recognition mistakes: the recording itself may differ from the reference. No WER, DER, speaker identification accuracy, or exhaustive action recall is claimed. The older `asr-2.json` was inspected preliminarily but is not the basis of the findings below; all segment IDs and quotations below come from the live REST snapshots.
+The reference documents are narrative transcripts plus summaries, not timestamped, independently checked acoustic annotations. Differences below are **observed reference/transcript divergences**, not proven recognition mistakes: the recording itself may differ from the reference. No WER, DER, speaker identification accuracy, or exhaustive action recall is claimed. All segment IDs and quotations below come from the live REST snapshots listed above.
 
 ## Meeting 1: chemistry and safety
 

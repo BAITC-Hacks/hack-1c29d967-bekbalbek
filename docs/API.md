@@ -1,134 +1,172 @@
-# API and event contract
+# API Protokol
 
-All endpoints are served by the single FastAPI process under `/api`. The frontend talks only to this API. Errors use one envelope:
+Базовый адрес Docker: `http://localhost:8080`; dev: `http://localhost:8000`. Все маршруты ниже начинаются с `/api`. Интерактивная схема FastAPI доступна на `/docs` у dev-сервера. Авторизации нет; сервис предназначен для локального использования.
 
-```json
-{ "error": { "code": "stale_proposal", "message": "Human readable", "details": {} } }
-```
+## Состояние
 
-## Health
-
-`GET /api/health` → `200`
+`GET /api/health` возвращает `status`, `database`, `model`, `domain`, `active_runs`, `version`, `provenance`, `llm_endpoint`, `stt_device`, `models_present`, `api_key_configured`.
 
 ```json
-{ "status": "ok" | "degraded", "database": "ok" | "error", "model": "gpt-5.4-mini",
-  "api_key_configured": true, "domain": { "key": "dispatch", "title": "Field-service dispatch" },
-  "active_runs": 0, "version": "0.1.0" }
-```
-
-## Domain data (replaceable module; shapes below are for the sample dispatch domain)
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/api/domain/examples` | Example cases the UI can start from |
-| `GET` | `/api/domain/cases/{case_ref}` | Records for the workspace (workers, jobs, assignments, rules) |
-| `POST` | `/api/domain/reset` | Reset sample data (repeatable demo) |
-| `PATCH` | `/api/domain/workers/{worker_id}` | Demo control: change capacity / availability to show stale-proposal rejection |
-
-`GET /api/domain/examples` → `{ "examples": ExampleCase[] }`
-
-```ts
-type ExampleCase = { id: string; title: string; description: string; expected_outcome: "proposal_ready"|"needs_input"|"infeasible";
-                     request: { case_ref: string; goal: string; input: CaseInput } }
-```
-
-`GET /api/domain/cases/{case_ref}` → `CaseView`
-
-```ts
-type CaseView = {
-  case_ref: string; title: string; description: string; planning_start: string; dates: string[];           // dates shown in the board
-  workers: { id: string; name: string; skills: string[]; zone: string; capacity_hours: number; unavailable_dates: string[] }[];
-  jobs:    { id: string; title: string; required_skill: string|null; duration_hours: number|null; deadline: string; priority: "low"|"normal"|"high";
-             zone: string; status: "unassigned"|"assigned"|"done" }[];
-  assignments: { id: string; job_id: string; worker_id: string; scheduled_date: string; hours: number; source_action_key: string|null }[];
-  rules: { id: string; label: string; severity: "fail"|"warn"; source: string; description: string }[];
+{
+  "status": "ok",
+  "database": "ok",
+  "model": "scripted:auto",
+  "domain": {"key": "protokol", "title": "Протокол совещания"},
+  "provenance": {"enabled": true, "blocked_external_connections": 0},
+  "llm_endpoint": "http://localhost:11434/v1",
+  "stt_device": "cpu",
+  "models_present": true
 }
 ```
 
-## Runs
+Это сокращённый пример. `models_present` проверяет наличие и ненулевой размер ожидаемых файлов; не проверяет качество распознавания. Наличие `llm_endpoint` в scripted-режиме не означает обращение к Ollama. `api_key_configured` также не доказывает наличие облачного подключения.
 
-### `POST /api/runs` → `202 { run: Run }`
+## Встречи
 
-```ts
-type CreateRunRequest = { case_ref: string; goal: string; input: CaseInput; options?: { max_turns?: number } }
-// sample domain CaseInput:
-type CaseInput = { planning_start: string; job_ids?: string[]; job_overrides?: Record<string, { required_skill?: string; duration_hours?: number }>;
-                   capacity_overrides?: Record<string, number>; notes?: string }
-```
-
-`422` on validation errors (FastAPI/Pydantic format).
-
-### `GET /api/runs?limit=50` → `{ runs: Run[] }` (newest first)
-
-### `GET /api/runs/{id}` → `RunDetail`
-
-```ts
-type RunStatus = "queued"|"analyzing"|"needs_input"|"infeasible"|"proposed"|"validation_failed"|"applying"|"applied"|"verified"|"failed"|"interrupted"
-type Run = { id: string; case_ref: string; goal: string; input: CaseInput; status: RunStatus; outcome: "proposal_ready"|"needs_input"|"infeasible"|null;
-             model: string; max_turns: number; error: { code: string; message: string; stage: string }|null;
-             stats: { duration_ms: number|null; tool_calls: number; usage: { requests: number; input_tokens: number; output_tokens: number; total_tokens: number }|null };
-             created_at: string; started_at: string|null; finished_at: string|null; updated_at: string }
-type RunDetail = {
-  run: Run;
-  proposals: ProposalRecord[];                 // every version, oldest first (v1 rejected, v2 validated, ...)
-  proposal: ProposalRecord | null;             // the latest one
-  needs_input: { message: string; missing_fields: { field: string; reason: string }[] } | null;
-  infeasible:  { message: string; blocking_constraints: { rule_id: string; detail: string; refs: string[] }[] } | null;
-  application: Application | null;
-  snapshot_before: unknown | null;             // domain snapshot at proposal time
-  snapshot_after: unknown | null;              // domain snapshot after verification
-  messages: RunMessage[];                      // conversation history (expandable, for debugging)
-}
-type ProposalRecord = { id: string; run_id: string; version: number; status: "validated"|"rejected"|"superseded"|"applied"|"stale";
-                        content: Proposal; validation: ValidationReport; basis_fingerprint: string; created_at: string }
-type Proposal = { summary: string; actions: ProposedAction[]; evidence: EvidenceRef[]; assumptions: string[]; expected_effects: string[] }
-type ProposedAction = { action_id: string; type: string; [k: string]: unknown }      // sample: type "assign_job" { job_id, worker_id, scheduled_date }
-type EvidenceRef = { kind: "record"|"rule"|"tool_result"; ref: string; note: string|null }
-type ValidationReport = { ok: boolean; checks: ValidationCheck[]; errors: ValidationCheck[] }
-type ValidationCheck = { rule_id: string; label: string; status: "pass"|"warn"|"fail"; message: string; action_id: string|null; refs: string[]; source: string|null }
-type Application = { id: string; proposal_id: string; version: number; status: "applying"|"applied"|"verified"|"failed"|"rejected";
-                     actions: { id: string; action_id: string; type: string; status: "applied"|"failed"; result: unknown; summary: string }[];
-                     verification: VerificationReport | null; error: { code: string; message: string } | null; started_at: string; finished_at: string|null }
-type VerificationReport = { ok: boolean; summary: string; checks: { id: string; label: string; ok: boolean; detail: string }[] }
-type RunMessage = { seq: number; role: "system"|"user"|"assistant"|"tool"; kind: "message"|"tool_call"|"tool_output"|"final_output"; content: unknown; created_at: string }
-```
-
-### `POST /api/runs/{id}/apply` body `{ proposal_id: string; version: number }`
-
-- `200 { run: Run; application: Application }` after execution **and** verification finished.
-- `409` with `error.code` one of `stale_proposal` (data changed since the proposal was made, or re-validation failed), `duplicate_apply` (already applying/applied), `invalid_state` (run not in `proposed`, or proposal id/version mismatch).
-- `404` unknown run/proposal.
-
-### `GET /api/runs/{id}/events` — Server-Sent Events
-
-- Replays persisted events, then streams live ones. Reconnect with the `Last-Event-ID` header (browsers do this automatically) or `?after=<seq>`.
-- `id` = per-run sequence number, `event` = event type, `data` = JSON `RunEvent`.
-- The stream closes when the run reaches a terminal status (`verified`, `failed`, `interrupted`, `infeasible`, `needs_input`, `validation_failed`). It stays open while `proposed` so the apply phase streams into the same timeline.
-- `GET /api/runs/{id}/events/list` returns the same events as JSON for non-streaming reads.
-
-```ts
-type RunEvent = { id: number; run_id: string; type: EventType; ts: string; run_status: RunStatus; payload: EventPayload }
-type EventType = "run_started"|"tool_started"|"tool_finished"|"tool_failed"|"agent_output"|"proposal_ready"|"validation_failed"|"revision_started"
-               | "apply_started"|"apply_rejected"|"action_applied"|"verification_finished"|"run_finished"|"run_failed"
-```
-
-Payloads:
-
-| type | payload |
+| Метод и путь | Запрос / результат |
 |---|---|
-| `run_started` | `{ goal, case_ref, model, max_turns }` |
-| `tool_started` | `{ call_id, tool, label, arguments }` |
-| `tool_finished` | `{ call_id, tool, label, duration_ms, attempt, summary, result, truncated }` |
-| `tool_failed` | `{ call_id, tool, label, duration_ms, attempt, will_retry, error: { code, message } }` |
-| `agent_output` | `{ outcome, message, missing_fields, blocking_constraints, action_count }` |
-| `proposal_ready` | `{ proposal_id, version, summary, action_count, validation: ValidationReport }` |
-| `validation_failed` | `{ proposal_id, version, errors: ValidationCheck[], will_revise }` |
-| `revision_started` | `{ attempt, reason }` |
-| `apply_started` | `{ application_id, proposal_id, version }` |
-| `apply_rejected` | `{ code, message, details }` |
-| `action_applied` | `{ action_id, type, summary, result }` |
-| `verification_finished` | `{ ok, summary, checks }` |
-| `run_finished` | `{ outcome, status, duration_ms, tool_calls, usage }` |
-| `run_failed` | `{ code, message, stage, details }` |
+| `POST /api/domain/meetings` | multipart: `file`, `title`, `meeting_date`; `202 {"meeting": ...}` |
+| `GET /api/domain/meetings/{id}` | `{meeting, speakers, segments, protocol, action_items}` |
+| `POST /api/domain/meetings/{id}/transcribe` | Без тела; `202 {meeting_id, status: "transcribing"}` |
+| `PATCH /api/domain/meetings/{id}/speakers/{speaker_id}` | JSON `{"display_name":"Имя"}`; `{speaker: ...}` |
+| `GET /api/domain/examples` | `{examples: [...]}` для всех сохранённых встреч, включая загрузки |
+| `GET /api/domain/cases/{case_ref}` | Представление встречи для интерфейса, `case_ref` равен ID встречи |
+| `POST /api/domain/reset` | Удаляет две встроенные встречи, их запуски и зависимые данные; создаёт записи образцов заново |
 
-`label` is the plain-language label from the domain tool registry (e.g. `get_case` → "Reading the case"). `arguments`/`result` are bounded (truncated with `truncated: true`).
+Загрузка принимает `.mp3`, `.wav`, `.m4a`, `.mp4`, `.ogg`, `.webm`, `.flac`. Дата — `YYYY-MM-DD`, название — 1–200 символов. Пустой файл отклоняется (422), неподдерживаемое расширение — 415. Ограничение загрузочного HTTP-запроса — 300 MiB вместе с multipart-обрамлением; остальных запросов — 1 MiB. Превышение даёт 413. Принятая загрузка ещё не подтверждает, что файл можно декодировать.
+
+Статусы встречи: `uploaded`, `transcribing`, `ready`, `failed`. Проверяйте `meeting.error`, если обработка завершилась ошибкой. Уже обрабатываемая встреча и встреча с подтверждённым протоколом возвращают 409 при повторном запуске распознавания. Полный CPU-прогон может занимать несколько минут; HTTP-запрос запуска сам распознавания не ждёт.
+
+Основные поля результата:
+
+```text
+meeting: id, title, meeting_date, audio_path, status, error,
+         duration_s, language_hint, created_at
+speakers[]: meeting_id, speaker_id, display_name
+segments[]: id, meeting_id, idx, start_s, end_s, speaker_id,
+            language, text, words[{start,end,text,prob}]
+protocol: null либо id, meeting_id, run_id, summary, decisions[], confirmed_at
+action_items[]: id, protocol_id, meeting_id, action_key, text, owner_name,
+                owner_speaker_id, deadline_text, deadline_date, urgency,
+                status, source_segment_ids[]
+```
+
+`GET /cases/{case_ref}` дополнительно содержит верхнеуровневые `case_ref`, `title`, `description`, `status`, `meeting_date`, `duration_s`, `error` и те же данные встречи. `protocol` — последний сохранённый протокол; `action_items` относятся к нему.
+
+`owner_name` — исполнитель, а `owner_speaker_id` — говорящий, давший поручение, либо `null`. Идентификаторы сегментов глобальные в БД: не предполагайте, что новая встреча начинается с сегмента 1. Времена — секунды от начала записи. `deadline_date=null` означает, что календарный срок не установлен; исходная фраза сохраняется отдельно. Относительные сроки рассчитываются от даты встречи; неделя нормализуется к пятнице по соглашению приложения.
+
+## Запуск протоколиста
+
+`POST /api/runs` возвращает `202 {"run": ...}`:
+
+```json
+{
+  "case_ref": "m-sample-1",
+  "goal": "Составь протокол совещания",
+  "input": {"meeting_date": "2026-09-23", "language": "auto"},
+  "options": {"max_turns": 20}
+}
+```
+
+В `input` дата обязательна; `language` допускает `ru`, `kk`, `auto`, `notes` — необязательный текст до 2000 символов. Эти поля относятся к запросу протоколиста; `language` не является параметром принудительного выбора ASR-модели в маршруте `/transcribe`.
+
+`GET /api/runs?limit=50` возвращает `{runs: [...]}`. `GET /api/runs/{id}` возвращает:
+
+```text
+run: id, case_ref, goal, input, status, outcome, model, max_turns,
+     error, stats, created_at, started_at, finished_at, updated_at
+proposal: последнее предложение либо null
+proposals: все версии предложений
+needs_input, infeasible: пояснения при соответствующем исходе либо null
+application: результат подтверждения либо null
+snapshot_before, snapshot_after, messages
+```
+
+Статусы запуска: `queued`, `analyzing`, `needs_input`, `infeasible`, `proposed`, `validation_failed`, `applying`, `applied`, `verified`, `failed`, `interrupted`. `outcome` — `proposal_ready`, `needs_input`, `infeasible` либо `null`.
+
+Предложение содержит `id`, `version`, `status`, `content`, `validation`, `basis_fingerprint`. В `content` находятся `summary`, `decisions`, `actions`, `evidence`, `assumptions`, `expected_effects`. Каждое действие:
+
+```json
+{
+  "action_id": "a1",
+  "type": "action_item",
+  "text": "Подготовить отчёт",
+  "owner_name": "не назначен",
+  "owner_speaker_id": "S1",
+  "deadline_text": "до пятницы",
+  "deadline_date": "2026-09-25",
+  "urgency": "средний",
+  "source_segment_ids": [123]
+}
+```
+
+Пример показывает форму, а не данные конкретной встречи. `text` — 1–500 символов; `source_segment_ids` непустой; `urgency` — `высокий`, `средний`, `низкий`. Пустой список действий допустим. `validation.ok=true` подтверждает прохождение программных правил, а не смысловую точность каждого поручения.
+
+## Подтверждение и экспорт
+
+`POST /api/runs/{id}/apply`:
+
+```json
+{"proposal_id":"UUID из proposal.id","version":1}
+```
+
+Используйте фактические ID и версию последнего предложения. Успех: `200 {run, application}` с результатами применения и проверки. Завершённый успешный статус — `verified`. Типовые конфликты (409): `duplicate_apply`, `stale_proposal`, `invalid_state`. Изменение говорящего после предложения может сделать его устаревшим; создайте новый запуск.
+
+| Экспорт | Тип ответа |
+|---|---|
+| `GET /api/domain/meetings/{id}/protocol.pdf` | `application/pdf` |
+| `GET /api/domain/meetings/{id}/protocol.docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+
+Оба маршрута возвращают файл с заголовком `Content-Disposition: attachment`; при отсутствии подтверждённого протокола — 404. Экспорт включает название, дату, участников, саммари, решения, поручения и стенограмму. API редактирования текста/срока поручения и изменения его статуса пока нет.
+
+## События и ошибки
+
+`GET /api/runs/{id}/events/list?after=0` возвращает `{events: [...]}`. `GET /api/runs/{id}/events` открывает SSE: сначала воспроизводит сохранённые события, затем передаёт новые. Продолжение — `Last-Event-ID` или `?after=<номер>`.
+
+Событие содержит `id`, `run_id`, `type`, `ts`, `run_status`, `payload`. Основные типы: `run_started`, `tool_started`, `tool_finished`, `tool_failed`, `agent_output`, `proposal_ready`, `validation_failed`, `revision_started`, `apply_started`, `apply_rejected`, `action_applied`, `verification_finished`, `run_finished`, `run_failed`. Аргументы и результаты инструментов ограничены по размеру; поле `truncated` указывает обрезание. Это события протоколиста, а не непрерывный прогресс ASR.
+
+Прикладные ошибки обычно имеют форму `{"error":{"code":"...","message":"...","details":{}}}`. Ошибки параметров FastAPI и отдельные HTTP-ошибки загрузки/экспорта могут иметь `detail`; клиент должен проверять HTTP-статус и тело ответа.
+
+## Проверка через curl
+
+Команды выполняются из корня репозитория в Bash; нужны `curl` и `jq`. Стек должен быть запущен. Создаётся отдельная встреча, существующие протоколы не удаляются. Дата 2026-09-23 задаётся явно для демонстрации; исходные записи не устанавливают год совещания.
+
+```bash
+set -euo pipefail
+API=http://localhost:8080
+MEETING=$(curl -fsS "$API/api/domain/meetings" \
+  -F 'file=@backend/samples/sovechanie_2.mp3' \
+  -F 'title=Проверка Protokol' -F 'meeting_date=2026-09-23' | jq -er '.meeting.id')
+curl -fsS -X POST "$API/api/domain/meetings/$MEETING/transcribe"
+STATUS=transcribing
+for i in $(seq 1 240); do
+  STATUS=$(curl -fsS "$API/api/domain/meetings/$MEETING" | jq -r '.meeting.status')
+  case "$STATUS" in ready|failed) break ;; esac
+  sleep 5
+done
+if [ "$STATUS" != ready ]; then
+  curl -fsS "$API/api/domain/meetings/$MEETING" | jq '.meeting'
+  exit 1
+fi
+REQUEST=$(jq -nc --arg id "$MEETING" \
+  '{case_ref:$id,goal:"Составь протокол совещания",input:{meeting_date:"2026-09-23"}}')
+RUN=$(curl -fsS "$API/api/runs" -H 'Content-Type: application/json' \
+  -d "$REQUEST" | jq -er '.run.id')
+STATUS=queued
+for i in $(seq 1 180); do
+  DETAIL=$(curl -fsS "$API/api/runs/$RUN")
+  STATUS=$(jq -r '.run.status' <<< "$DETAIL")
+  case "$STATUS" in queued|analyzing) sleep 2 ;; *) break ;; esac
+done
+jq '{status:.run.status,proposal:.proposal.content,validation:.proposal.validation}' <<< "$DETAIL"
+test "$STATUS" = proposed
+# Перед следующим запросом просмотрите выведенные поручения и цитаты.
+APPROVAL=$(jq -c '.proposal | {proposal_id:.id,version:.version}' <<< "$DETAIL")
+curl -fsS -X POST "$API/api/runs/$RUN/apply" \
+  -H 'Content-Type: application/json' -d "$APPROVAL" | jq -e '.run.status == "verified"'
+curl -fsS "$API/api/domain/meetings/$MEETING/protocol.pdf" -o protocol.pdf
+curl -fsS "$API/api/domain/meetings/$MEETING/protocol.docx" -o protocol.docx
+curl -fsS "$API/api/health" | jq '.provenance'
+```
+
+В проверенном Docker-прогоне запись №2 распозналась за 472 секунды, получен один scripted-кандидат, статус `verified` и PDF: [фактический результат](../evaluation/docker-smoke.json). Это демонстрация процесса, не оценка полноты извлечения.

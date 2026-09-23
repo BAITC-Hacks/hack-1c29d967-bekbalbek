@@ -11,8 +11,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    for name in ("dispatch_assignments", "dispatch_jobs", "dispatch_cases", "dispatch_workers"):
-        op.drop_table(name)
     op.create_table(
         "meetings",
         sa.Column("id", sa.String(64), primary_key=True),
