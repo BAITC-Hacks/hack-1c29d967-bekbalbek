@@ -69,3 +69,6 @@ lint: ## Lint backend and frontend
 
 demo: up migrate seed ## One-shot: db up, migrate, seed
 	@echo "Now run 'make api' in one terminal and 'make web' in another, then open http://localhost:5173"
+
+models: ## Install local speech models
+	cd $(BACKEND) && ./scripts/get_models.sh

@@ -15,3 +15,10 @@ backend/evals/results/*.json
 .DS_Store
 .idea/
 .vscode/
+
+backend/models/
+backend/media/
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
