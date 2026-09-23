@@ -27,7 +27,7 @@
 .hero-demo-tabs { display: flex; gap: 4px; padding: 8px; background: var(--bg-surface-2); border-bottom: 1px solid var(--border); }
 .hero-demo-tabs button { height: 28px; padding: 0 12px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: background var(--d-fast), color var(--d-fast); }
 .hero-demo-tabs button.on { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--e-1); }
-.hero-demo-stage { position: relative; height: 300px; }
+.hero-demo-stage { position: relative; height: 420px; }
 .scene { position: absolute; inset: 0; padding: 20px; opacity: 0; transform: translateY(6px); transition: opacity var(--d-slow) var(--ease-out), transform var(--d-slow) var(--ease-out); pointer-events: none; }
 .scene-on { opacity: 1; transform: none; pointer-events: auto; }
 
