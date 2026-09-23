@@ -9,6 +9,7 @@ from openai import AsyncOpenAI
 
 from app.config import Settings
 from app.core.contracts import DomainModule
+from app.core.errors import InvalidOutputError
 from app.core.read_models import RunDTO
 from app.speech.guard import is_loopback
 
@@ -48,18 +49,36 @@ class OllamaProtocolModel(OpenAIChatCompletionsModel):
                 continue
             if result.get("ok"):
                 tool_name = calls.get(item.get("call_id"))
-                if tool_name == "read_transcript" and (result.get("truncated") or result.get("data", {}).get("next_offset") is not None):
-                    continue
+                if tool_name == "read_transcript":
+                    data = result.get("data")
+                    if not isinstance(data, dict) or result.get("truncated") or data.get("next_offset") is not None:
+                        continue
                 completed.add(tool_name)
-            elif result.get("error", {}).get("code") == "not_ready":
+            elif isinstance(result.get("error"), dict) and result["error"].get("code") == "not_ready":
                 not_ready = True
         settings = kwargs["model_settings"]
-        if not_ready or {"get_meeting", "read_transcript"} <= completed:
+        final_phase = not_ready or {"get_meeting", "read_transcript"} <= completed
+        if final_phase:
             kwargs["model_settings"] = replace(settings, extra_body=None, tool_choice="none")
         else:
             tool = "get_meeting" if "get_meeting" not in completed else "read_transcript"
             kwargs["model_settings"] = replace(settings, extra_body={"response_format": None}, tool_choice=tool)
-        return await super().get_response(*args, **kwargs)
+        response = await super().get_response(*args, **kwargs)
+        if final_phase:
+            text = "".join(
+                part.text
+                for item in response.output if item.type == "message"
+                for part in item.content if part.type == "output_text"
+            )
+            try:
+                json.loads(text)
+            except (TypeError, ValueError) as exc:
+                raise InvalidOutputError(
+                    "Модель вернула незавершённый или некорректный JSON. Выполните make llm, "
+                    "установите OPENAI_MODEL=protokol-qwen3.5:4b и перезапустите API. "
+                    "Если ошибка повторится, сократите стенограмму и повторите."
+                ) from exc
+        return response
 
 
 def default_model_factory(settings: Settings, domain: DomainModule) -> Callable[[RunDTO], str | Model]:

@@ -72,3 +72,6 @@ demo: up migrate seed ## One-shot: db up, migrate, seed
 
 models: ## Install local speech models
 	cd $(BACKEND) && ./scripts/get_models.sh
+
+llm: ## Configure the installed local Qwen weights with a 16K context window
+	cd $(BACKEND) && ./scripts/configure_ollama.sh

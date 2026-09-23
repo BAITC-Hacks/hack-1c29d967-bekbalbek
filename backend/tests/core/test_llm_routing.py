@@ -63,7 +63,9 @@ async def test_ollama_model_separates_tool_and_final_json_grammar(monkeypatch, i
     from app.core.llm import OllamaProtocolModel
 
     captured = {}
-    sentinel = object()
+    from types import SimpleNamespace
+
+    sentinel = SimpleNamespace(output=[SimpleNamespace(type="message", content=[SimpleNamespace(type="output_text", text='{"outcome":"needs_input"}')])])
 
     async def capture(self, *args, **kwargs):
         captured.update(kwargs)
@@ -92,3 +94,55 @@ def test_ollama_factory_builds_local_model_without_network():
     )(None)
     assert isinstance(model, OllamaProtocolModel)
     assert str(model._client.base_url) == "http://localhost:11434/v1/"
+
+
+@pytest.mark.parametrize("text, valid", [('{"outcome":"proposal_ready"}', True), ('{"outcome":', False), ('', False)])
+async def test_final_json_is_checked_before_agent_parsing(monkeypatch, text, valid):
+    from agents import ModelSettings
+    from agents.items import ModelResponse
+    from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+    from agents.usage import Usage
+    from openai.types.responses import ResponseOutputMessage, ResponseOutputText
+
+    from app.core.errors import InvalidOutputError
+    from app.core.llm import OllamaProtocolModel
+
+    response = ModelResponse(output=[ResponseOutputMessage(
+        id="msg", type="message", role="assistant", status="completed",
+        content=[ResponseOutputText(type="output_text", text=text, annotations=[])],
+    )], usage=Usage(), response_id=None)
+
+    async def respond(self, *args, **kwargs):
+        return response
+
+    monkeypatch.setattr(OpenAIChatCompletionsModel, "get_response", respond)
+    model = OllamaProtocolModel(model="local", openai_client=object())
+    request = dict(input=_tool_result("get_meeting") + _tool_result("read_transcript"), model_settings=ModelSettings())
+    if valid:
+        assert await model.get_response(**request) is response
+    else:
+        with pytest.raises(InvalidOutputError, match="make llm") as error:
+            await model.get_response(**request)
+        assert "OPENAI_MODEL=protokol-qwen3.5:4b" in str(error.value)
+
+
+@pytest.mark.parametrize("data", [None, [], "truncated text"])
+async def test_malformed_transcript_data_keeps_read_phase(monkeypatch, data):
+    import json
+
+    from agents import ModelSettings
+    from agents.models.openai_chatcompletions import OpenAIChatCompletionsModel
+
+    from app.core.llm import OllamaProtocolModel
+
+    captured = {}
+
+    async def respond(self, *args, **kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(OpenAIChatCompletionsModel, "get_response", respond)
+    items = _tool_result("get_meeting") + _tool_result("read_transcript")
+    items[-1]["output"] = json.dumps({"ok": True, "data": data})
+    await OllamaProtocolModel(model="local", openai_client=object()).get_response(input=items, model_settings=ModelSettings())
+    assert captured["model_settings"].tool_choice == "read_transcript"

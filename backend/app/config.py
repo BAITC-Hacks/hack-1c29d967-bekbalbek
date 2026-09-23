@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://agent:agent@localhost:5433/agent_workspace"
     openai_api_key: str | None = None
-    openai_model: str = "qwen3.5:4b"
+    openai_model: str = "protokol-qwen3.5:4b"
     openai_base_url: str | None = "http://localhost:11434/v1"
     stt_device: Literal["auto", "cuda", "cpu"] = "auto"
     models_dir: Path = Path(__file__).resolve().parents[1] / "models"

@@ -98,6 +98,19 @@ async def validate_proposal(
                 action_id=action.action_id,
             )
         )
+        cited_speakers = {segments[sid].speaker_id for sid in action.source_segment_ids if sid in segments}
+        if known and action.owner_speaker_id is not None and action.owner_speaker_id not in cited_speakers:
+            action.owner_speaker_id = None
+            checks.append(
+                ValidationCheck(
+                    rule_id="giver_matches_evidence",
+                    label="Поручивший подтверждён цитатой",
+                    status="warn",
+                    message="Указанный говорящий отсутствует в цитатах: поручивший оставлен неуказанным",
+                    action_id=action.action_id,
+                    refs=refs,
+                )
+            )
         normalized = resolve(action.deadline_text, meeting.meeting_date)
         changed = normalized != action.deadline_date
         action.deadline_date = normalized
