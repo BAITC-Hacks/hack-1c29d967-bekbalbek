@@ -1,4 +1,5 @@
 """Two Whisper models, one per language family, chosen per VAD window from a constrained language ID."""
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -8,6 +9,8 @@ from faster_whisper.vad import VadOptions, get_speech_timestamps
 
 from app.speech.audio import SAMPLE_RATE
 from app.speech.cuda import preload_cuda_libs
+
+log = logging.getLogger(__name__)
 
 RU_MODEL_ID = "deepdml/faster-whisper-large-v3-turbo-ct2"
 ALLOWED_LANGS = ("ru", "kk", "en")
@@ -88,7 +91,12 @@ class Transcriber:
     @property
     def kk(self) -> WhisperModel:
         if self._kk is None:
-            self._kk = self._load(str(self.models_dir / "kk-turbo-ct2"))
+            local = self.models_dir / "kk-turbo-ct2"
+            if (local / "model.bin").is_file():
+                self._kk = self._load(str(local))
+            else:
+                log.warning("Kazakh model weights are missing; using the local multilingual Whisper model for Kazakh speech")
+                self._kk = self.ru
         return self._kk
 
     def windows(self, pcm: np.ndarray) -> list[tuple[int, int]]:

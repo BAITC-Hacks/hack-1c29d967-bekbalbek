@@ -77,3 +77,47 @@ def test_language_detection_is_constrained_and_uncertainty_falls_back():
     assert stt.detect(np.ones(16000))[0] == "ru"
     stt._ru = SimpleNamespace(detect_language=lambda **_: ("kk", 0.7, [("kk", 0.7), ("ru", 0.2)]))
     assert stt.detect(np.ones(16000)) == ("kk", 0.7)
+
+
+def test_missing_kazakh_weights_reuse_local_multilingual_model_once(tmp_path, monkeypatch, caplog):
+    from types import SimpleNamespace
+
+    import numpy as np
+
+    calls = []
+    loads = []
+    local_ru = tmp_path / "ru-turbo-ct2"
+    local_ru.mkdir()
+    (local_ru / "model.bin").write_bytes(b"local")
+
+    class FakeModel:
+        def detect_language(self, **kwargs):
+            return "kk", 0.95, [("kk", 0.95), ("ru", 0.04)]
+
+        def transcribe(self, pcm, **kwargs):
+            calls.append(kwargs)
+            word = SimpleNamespace(start=0.2, end=0.8, word=" сөз", probability=0.9)
+            segment = SimpleNamespace(start=0.2, end=0.8, text=" сөз", words=[word], no_speech_prob=0.0)
+            return iter([segment]), None
+
+    model = FakeModel()
+
+    def load(path, **kwargs):
+        loads.append((path, kwargs))
+        assert path == str(local_ru)
+        assert kwargs["local_files_only"] is True
+        return model
+
+    monkeypatch.setattr("app.speech.asr.WhisperModel", load)
+    stt = Transcriber(tmp_path, device="cpu")
+    monkeypatch.setattr(stt, "windows", lambda pcm: [(0, 16000), (16000, 32000)])
+    with caplog.at_level("WARNING", logger="app.speech.asr"):
+        segments = stt.transcribe(np.ones(32000, dtype=np.float32))
+    assert stt.kk is stt.ru is model
+    assert len(loads) == 1
+    assert [call["language"] for call in calls] == ["kk", "kk"]
+    assert [segment.language for segment in segments] == ["kk", "kk"]
+    assert [segment.words[0].start for segment in segments] == [0.2, 1.2]
+    assert [window[2] for window in stt.language_windows] == ["kk", "kk"]
+    warnings = [record for record in caplog.records if record.name == "app.speech.asr"]
+    assert len(warnings) == 1 and "Kazakh model weights are missing" in warnings[0].message

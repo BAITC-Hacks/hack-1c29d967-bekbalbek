@@ -56,7 +56,7 @@
 | Qwen3.5-4B через Ollama | Живое извлечение протокола, 3,4 GB | [Apache-2.0](https://huggingface.co/Qwen/Qwen3.5-4B) |
 | Qwen3-4B-Instruct-2507 Q4_K_M | Дополнительный локальный вариант, 2,5 GB | [Apache-2.0](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507) |
 
-`backend/scripts/get_models.sh` получает RU-модель с Hugging Face, VAD и ONNX-модели диаризации из публичных релизов sherpa-onnx. Казахский каталог CT2 предоставляется отдельно: скрипт его не скачивает и не конвертирует. Веса не входят в Git. Лицензия весов pyannote — MIT; среды sherpa-onnx — Apache-2.0.
+`backend/scripts/get_models.sh` получает RU-модель с Hugging Face, VAD и ONNX-модели диаризации из публичных релизов sherpa-onnx. `make models` скачивает публичные модели и конвертирует казахскую модель из Hugging Face в CT2. Веса не входят в Git. Лицензия весов pyannote — MIT; среды sherpa-onnx — Apache-2.0.
 
 Основные библиотеки: Python 3.12 (PSF); FastAPI, Pydantic, OpenAI Agents SDK, faster-whisper, CTranslate2, ONNX Runtime, SQLAlchemy, Alembic, python-docx (MIT); asyncpg и sherpa-onnx (Apache-2.0); ReportLab (BSD); React и Vite (MIT), TypeScript (Apache-2.0). PostgreSQL — PostgreSQL License, Ollama — MIT. Лицензия ffmpeg зависит от сборки (LGPL/GPL). Шрифты DejaVu и их уведомление находятся в `backend/app/domain/fonts/`. Код Protokol — [MIT](LICENSE); лицензии моделей и зависимостей действуют отдельно. Версии закреплены в `backend/uv.lock` и `frontend/pnpm-lock.yaml`.
 
@@ -70,7 +70,14 @@ FastAPI обслуживает загрузку, обработку и эксп�
 
 ### Веса речи
 
-Скопируйте предоставленный комплект весов в `backend/models/`:
+Установите `uv` и Python 3.12, затем из корня репозитория выполните:
+
+```bash
+make install
+make models
+```
+
+`make models` скачивает публичные модели и конвертирует `shyngys879/kazakh-whisper-large-v3-turbo` из Hugging Face в CT2 int8, если казахских весов ещё нет. Для конвертации нужны около **4 GB Python-пакетов и несколько минут**; команда конвертации сегодня **не была повторно проверена на чистой машине**, проверен только синтаксис скрипта. Готовые локальные веса также можно скопировать в `backend/models/`. Структура полного комплекта:
 
 ```text
 backend/models/
@@ -82,7 +89,7 @@ backend/models/
   diarization/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx
 ```
 
-Комплект занимает около 2,4 GiB. Если уже есть казахский CT2-каталог, остальные публичные веса можно установить через `make install models` (нужны `uv`, Python 3.12 и интернет). Подготовленные модели при обработке сеть не используют. Без казахского каталога `make models` завершится с объяснением; одного клонирования Git для ASR недостаточно.
+Полный комплект весов занимает около 2,4 GiB; установка требует интернета, подготовленные модели при обработке сеть не используют. Если казахская модель отсутствует, приложение один раз предупреждает при её первом использовании в обработке записи и направляет казахские окна в русскую многоязычную модель с низким качеством. `/api/health` показывает `kazakh_model_present: false`; `models_present: true` означает наличие RU-модели, VAD и диаризации и не требует казахских весов. Если конвертация не завершилась, уже скачанных RU/VAD/диаризации достаточно для русскоязычных образцов.
 
 ### Docker: без Ollama
 
@@ -91,12 +98,12 @@ backend/models/
 ```bash
 cp .env.example .env
 mkdir -p backend/media
-# До запуска разместите веса речи в backend/models/.
+# До запуска выполните make install models или скопируйте готовые веса в backend/models/.
 OPENAI_MODEL=scripted:auto make stack
 curl -fsS http://localhost:8080/api/health
 ```
 
-Откройте `http://localhost:8080/#/app`. Ожидается `model: scripted:auto`, `models_present: true`, `provenance.enabled: true`. Compose монтирует локальные `models`, `media`, `samples`; ASR работает на CPU. Адрес `http://localhost:11434/v1` нужен для проверки конфигурации при запуске; scripted-режим к нему не обращается. Явное значение `OPENAI_MODEL` исключает влияние настроек оболочки. Создание `backend/media` до запуска контейнера сохраняет права текущего пользователя для файлов CLI-проверки.
+Откройте `http://localhost:8080/#/app`. Ожидается `model: scripted:auto`, `models_present: true`, `provenance.enabled: true`. Compose монтирует локальные `models`, `media`, `samples`; ASR работает на CPU. Для загрузки/конвертации весов через `make models` на хосте нужны `uv` и Python 3.12; конвертация требует около 4 GB пакетов и нескольких минут и сегодня не перепроверялась на чистой машине. Обе записи организаторов русскоязычные и работают без казахской модели; тогда `kazakh_model_present: false`, а казахские окна обрабатываются RU-моделью с низким качеством. Адрес `http://localhost:11434/v1` нужен для проверки конфигурации при запуске; scripted-режим к нему не обращается. Явное значение `OPENAI_MODEL` исключает влияние настроек оболочки. Создание `backend/media` до запуска контейнера сохраняет права текущего пользователя для файлов CLI-проверки.
 
 ### Dev: локальный Qwen
 
@@ -158,7 +165,7 @@ pnpm lint
 pnpm build
 ```
 
-Последняя проверка backend: **199 passed**; Ruff и ESLint чистые. Предыдущий прогон дал 222 passed; после удаления Docker-подключения к LLM удалены и 23 соответствующие проверки. Тестам API нужна PostgreSQL на 5433 (отдельная `agent_workspace_test`); тесты с маркером `models` требуют локальных весов и без них пропускаются. Проверка без ASR: `uv run pytest -q -m 'not models'`.
+Последняя проверка backend: **200 passed**; Ruff и ESLint чистые. Предыдущий прогон дал 222 passed; после удаления Docker-подключения к LLM удалены и 23 соответствующие проверки, затем добавлена проверка работы без казахских весов. Тестам API нужна PostgreSQL на 5433 (отдельная `agent_workspace_test`); тесты с маркером `models` требуют локальных весов и без них пропускаются. Проверка без ASR: `uv run pytest -q -m 'not models'`.
 
 ### Проверка чистого клона — выполнена
 

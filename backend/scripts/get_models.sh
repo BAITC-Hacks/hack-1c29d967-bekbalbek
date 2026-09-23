@@ -17,7 +17,9 @@ if [ ! -f models/diarization/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_1
 fi
 uv run python -c "from faster_whisper.utils import download_model; download_model('deepdml/faster-whisper-large-v3-turbo-ct2', output_dir='models/ru-turbo-ct2')"
 if [ ! -f models/kk-turbo-ct2/model.bin ]; then
-  echo 'Kazakh model missing: place the CT2 model folder at backend/models/kk-turbo-ct2 (model.bin, config.json, tokenizer.json, preprocessor_config.json).' >&2
-  exit 1
+  uv run --with transformers --with torch ct2-transformers-converter \
+    --model shyngys879/kazakh-whisper-large-v3-turbo \
+    --output_dir models/kk-turbo-ct2 --quantization int8 \
+    --copy_files tokenizer.json preprocessor_config.json
 fi
 echo 'models ready'
