@@ -1,0 +1,142 @@
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
+
+:root {
+  /* neutrals */
+  --bg-app: #f5f6f8;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #f9fafb;
+  --bg-inset: #f1f3f5;
+  --border: #e4e7eb;
+  --border-strong: #cdd2d8;
+  --text-primary: #16181d;
+  --text-secondary: #565b66;
+  --text-tertiary: #7c8290;
+  --text-inverse: #ffffff;
+
+  /* accent */
+  --accent: #2457e6;
+  --accent-hover: #1c48c4;
+  --accent-active: #163a9e;
+  --accent-soft: #e8eeff;
+  --accent-soft-border: #b9c8fa;
+
+  /* status: fg / bg / border */
+  --proposed-fg: #2457e6; --proposed-bg: #e8eeff; --proposed-bd: #b9c8fa;
+  --applying-fg: #7a4b00; --applying-bg: #fff4dd; --applying-bd: #f5d48a;
+  --applied-fg: #1f5a8e;  --applied-bg: #e4f1fb;  --applied-bd: #a9cdeb;
+  --verified-fg: #166534; --verified-bg: #e6f6ec; --verified-bd: #9fd6b2;
+  --attention-fg: #8a4b00; --attention-bg: #fff3e0; --attention-bd: #f3c98b;
+  --failed-fg: #9f1d1d;   --failed-bg: #fdeaea;   --failed-bd: #f0a8a8;
+  --neutral-fg: #565b66;  --neutral-bg: #f1f3f5;  --neutral-bd: #d9dee5;
+
+  /* evidence / diff */
+  --evidence-hl: rgba(255, 230, 138, 0.45);
+  --evidence-hl-bd: #d9a400;
+  --diff-removed-bg: #fdeaea;
+  --diff-added-bg: #e6f6ec;
+  --diff-changed-bg: #e8eeff;
+
+  /* type */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* radius / elevation / motion */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-full: 999px;
+  --e-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --e-2: 0 8px 24px rgba(16, 24, 40, 0.10);
+  --e-3: 0 24px 48px rgba(16, 24, 40, 0.16);
+  --d-fast: 120ms; --d-base: 200ms; --d-slow: 320ms; --d-reveal: 480ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+:root[data-theme="dark"] {
+  --bg-app: #0f1115; --bg-surface: #171a20; --bg-surface-2: #1d2129; --bg-inset: #12151a;
+  --border: #2a2f39; --border-strong: #3a4150;
+  --text-primary: #eef0f4; --text-secondary: #a6acb8; --text-tertiary: #7d8493;
+  --accent: #5b8cff; --accent-hover: #7aa2ff; --accent-soft: #1b2a4f; --accent-soft-border: #2f4a8a;
+  --proposed-fg: #9db6ff; --proposed-bg: #1b2a4f; --proposed-bd: #2f4a8a;
+  --applying-fg: #f5d48a; --applying-bg: #3a2a08; --applying-bd: #6b4d10;
+  --applied-fg: #a9cdeb; --applied-bg: #12283a; --applied-bd: #1f4a66;
+  --verified-fg: #9fd6b2; --verified-bg: #10321c; --verified-bd: #1f5a34;
+  --attention-fg: #f3c98b; --attention-bg: #3a2608; --attention-bd: #6b4610;
+  --failed-fg: #f0a8a8; --failed-bg: #3a1212; --failed-bd: #6b2020;
+  --neutral-fg: #a6acb8; --neutral-bg: #1d2129; --neutral-bd: #2a2f39;
+  --diff-removed-bg: #3a1212; --diff-added-bg: #10321c; --diff-changed-bg: #1b2a4f;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-primary);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+
+/* ---------- primitives ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 36px; padding: 0 14px;
+  border-radius: var(--r-sm); border: 1px solid var(--border-strong);
+  background: var(--bg-surface); color: var(--text-primary);
+  font-weight: 500; cursor: pointer;
+  transition: background var(--d-fast) var(--ease-out), border-color var(--d-fast), transform var(--d-fast);
+}
+.btn:hover { background: var(--bg-surface-2); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--text-inverse); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover { background: var(--bg-inset); }
+.btn-lg { height: 44px; padding: 0 20px; font-size: 15px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 9px; border-radius: var(--r-full);
+  font-size: 12px; font-weight: 500; line-height: 1;
+  border: 1px solid var(--neutral-bd); background: var(--neutral-bg); color: var(--neutral-fg);
+  transition: background var(--d-base) var(--ease-out), color var(--d-base), border-color var(--d-base);
+  white-space: nowrap;
+}
+.chip-proposed { background: var(--proposed-bg); color: var(--proposed-fg); border-color: var(--proposed-bd); }
+.chip-applying { background: var(--applying-bg); color: var(--applying-fg); border-color: var(--applying-bd); }
+.chip-applied { background: var(--applied-bg); color: var(--applied-fg); border-color: var(--applied-bd); }
+.chip-verified { background: var(--verified-bg); color: var(--verified-fg); border-color: var(--verified-bd); }
+.chip-attention { background: var(--attention-bg); color: var(--attention-fg); border-color: var(--attention-bd); }
+.chip-failed { background: var(--failed-bg); color: var(--failed-fg); border-color: var(--failed-bd); }
+
+.mono { font-family: var(--font-mono); font-size: 12px; }
+
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border-strong); border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-inset) 25%, var(--bg-surface-2) 50%, var(--bg-inset) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--r-sm);
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes pulse-outline {
+  0% { box-shadow: 0 0 0 0 rgba(36, 87, 230, 0.45); }
+  100% { box-shadow: 0 0 0 8px rgba(36, 87, 230, 0); }
+}
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
