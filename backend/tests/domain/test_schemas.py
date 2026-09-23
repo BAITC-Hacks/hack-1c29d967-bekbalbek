@@ -1,31 +1,16 @@
+from datetime import date
+
 import pytest
 from pydantic import ValidationError
 
-from app.domain.api import WorkerPatch
-from app.domain.schemas import CaseInput, JobOverride
+from app.domain.schemas import ActionItemAction, CaseInput, ProtocolProposal
 
 
-def test_should_cap_the_number_of_job_ids_and_overrides() -> None:
+def test_action_requires_source_evidence():
     with pytest.raises(ValidationError):
-        CaseInput(planning_start="2026-09-24", job_ids=[f"j-{i}" for i in range(101)])
-    with pytest.raises(ValidationError):
-        CaseInput(
-            planning_start="2026-09-24", job_overrides={f"j-{i}": JobOverride(duration_hours=1) for i in range(101)}
-        )
-    with pytest.raises(ValidationError):
-        CaseInput(planning_start="2026-09-24", capacity_overrides={f"w-{i}": 1 for i in range(101)})
+        ActionItemAction(action_id="a1", text="Отчёт", owner_name="не назначен", source_segment_ids=[])
 
 
-def test_should_cap_string_lengths_in_overrides_and_ids() -> None:
-    with pytest.raises(ValidationError):
-        JobOverride(required_skill="x" * 61)
-    with pytest.raises(ValidationError):
-        CaseInput(planning_start="2026-09-24", job_ids=["j" * 61])
-    with pytest.raises(ValidationError):
-        CaseInput(planning_start="2026-09-24", capacity_overrides={"w-ana": 25})
-
-
-def test_should_reject_invalid_dates_in_worker_patch() -> None:
-    with pytest.raises(ValidationError):
-        WorkerPatch(unavailable_dates=["not-a-date"])
-    assert WorkerPatch(unavailable_dates=["2026-09-24"]).unavailable_dates[0].isoformat() == "2026-09-24"
+def test_meeting_input_and_empty_protocol():
+    assert CaseInput(meeting_date="2026-09-23").meeting_date == date(2026, 9, 23)
+    assert ProtocolProposal(summary="Нет поручений", actions=[]).actions == []

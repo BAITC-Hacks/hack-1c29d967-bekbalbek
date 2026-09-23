@@ -19,11 +19,11 @@ class Settings(BaseSettings):
     samples_dir: Path = Path(__file__).resolve().parents[1] / "samples"
     diarize_threshold: float = Field(default=0.7, gt=0, lt=2)
 
-    agent_max_turns: int = Field(default=12, ge=1, le=100)
+    agent_max_turns: int = Field(default=20, ge=1, le=100)
     agent_run_timeout_seconds: float = Field(default=300, gt=0)
     tool_timeout_seconds: float = Field(default=15, gt=0)
     tool_max_retries: int = Field(default=2, ge=0, le=10)
-    tool_result_max_chars: int = Field(default=6000, ge=200)
+    tool_result_max_chars: int = Field(default=40000, ge=200)
     agent_max_revisions: int = Field(default=1, ge=0, le=3)
 
     app_env: str = "dev"

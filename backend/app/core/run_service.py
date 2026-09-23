@@ -14,7 +14,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.config import Settings
 from app.core.agent_runtime import AgentRuntime
 from app.core.context import RunContext
-from app.core.contracts import AgentOutputBase, DomainModule, ProposalBase, ValidationReport, structural_checks
+from app.core.contracts import (
+    AgentOutputBase,
+    DomainModule,
+    ProposalBase,
+    ValidationCheck,
+    ValidationReport,
+    structural_checks,
+)
 from app.core.errors import InvalidOutputError
 from app.core.events import EventBus
 from app.core.read_models import RunDetailDTO, RunDTO, load_run_detail, run_to_dto
@@ -56,7 +63,7 @@ def revision_prompt(report: ValidationReport) -> str:
         f"- [{c.rule_id}] {c.message}" + (f" (action {c.action_id})" if c.action_id else "") for c in report.errors
     ]
     return (
-        "The proposal was rejected by the business-rule validator. Fix every failing check below, re-run simulate_plan, "
+        "The proposal was rejected by the business-rule validator. Fix every failing check below using the available evidence tools, "
         "and return a corrected proposal (or needs_input / infeasible if it truly cannot be fixed):\n"
         + "\n".join(lines)
     )
@@ -233,7 +240,42 @@ class RunService:
         checks = structural_checks(proposal)
         async with self._sf() as session:
             domain_report = await self._domain.validate_proposal(session, run.case_ref, run_ctx.case_input, proposal)
-        return ValidationReport.from_checks([*checks, *domain_report.checks])
+        checks.extend(domain_report.checks)
+        if self._domain.required_tools:
+            # Only persisted successful results from this run can establish evidence access.
+            events = await self._bus.replay(run.id)
+            successful = [event.payload for event in events if event.type == "tool_finished"]
+            used = {payload.get("tool") for payload in successful}
+            for name in self._domain.required_tools:
+                checks.append(ValidationCheck(
+                    rule_id="required_tool_used", label="Required evidence tool was used",
+                    status="pass" if name in used else "fail",
+                    message=f"Successfully read {name}" if name in used else f"Call {name} successfully before proposing a protocol",
+                    refs=[f"tool:{name}"],
+                ))
+            read_ids = set()
+            for payload in successful:
+                if payload.get("tool") not in {"read_transcript", "search_transcript"}:
+                    continue
+                result = payload.get("result")
+                # Truncated results are strings; do not infer ids from incomplete JSON.
+                if not isinstance(result, dict):
+                    continue
+                for segment in result.get("segments", []):
+                    if isinstance(segment, dict) and type(segment.get("id")) is int:
+                        read_ids.add(segment["id"])
+            for action in proposal.actions:
+                source_ids = getattr(action, "source_segment_ids", None)
+                if source_ids is None:
+                    continue
+                unread = sorted(set(source_ids) - read_ids)
+                checks.append(ValidationCheck(
+                    rule_id="evidence_read", label="Evidence was read in this run",
+                    status="fail" if unread else "pass",
+                    message=f"Read the cited transcript segments before proposing: {unread}" if unread else "All cited segments were returned by transcript tools",
+                    action_id=action.action_id, refs=[f"segment:{sid}" for sid in unread],
+                ))
+        return ValidationReport.from_checks(checks)
 
     async def _store_validated_proposal(
         self,

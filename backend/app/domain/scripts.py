@@ -1,183 +1,124 @@
-"""Canned agent conversations for the sample domain: used by evals, tests and the OPENAI_MODEL=scripted:<name> demo fallback."""
+"""Deterministic demo mode derives candidates only from returned transcript evidence."""
 
 import json
-from collections.abc import Callable
+import re
+from datetime import date
 from typing import Any
 
 from agents.testing import ModelStep, ScriptedModel, assistant_message, function_call
 
-FULL_PLAN: list[dict[str, Any]] = [
-    {"action_id": "a1", "type": "assign_job", "job_id": "j-101", "worker_id": "w-chen", "scheduled_date": "2026-09-24"},
-    {"action_id": "a2", "type": "assign_job", "job_id": "j-105", "worker_id": "w-ana", "scheduled_date": "2026-09-24"},
-    {
-        "action_id": "a3",
-        "type": "assign_job",
-        "job_id": "j-103",
-        "worker_id": "w-boris",
-        "scheduled_date": "2026-09-24",
-    },
-    {"action_id": "a4", "type": "assign_job", "job_id": "j-102", "worker_id": "w-ana", "scheduled_date": "2026-09-25"},
-    {"action_id": "a5", "type": "assign_job", "job_id": "j-104", "worker_id": "w-chen", "scheduled_date": "2026-09-24"},
-    {
-        "action_id": "a6",
-        "type": "assign_job",
-        "job_id": "j-106",
-        "worker_id": "w-boris",
-        "scheduled_date": "2026-09-25",
-    },
-]
-REDUCED_CAPACITY_PLAN: list[dict[str, Any]] = [
-    {**FULL_PLAN[0]},
-    {**FULL_PLAN[1]},
-    {**FULL_PLAN[2]},
-    {**FULL_PLAN[3]},
-    {"action_id": "a5", "type": "assign_job", "job_id": "j-104", "worker_id": "w-ana", "scheduled_date": "2026-09-26"},
-    {**FULL_PLAN[5]},
-]
-BAD_PLAN: list[dict[str, Any]] = [
-    {
-        "action_id": "a1",
-        "type": "assign_job",
-        "job_id": "j-101",
-        "worker_id": "w-boris",
-        "scheduled_date": "2026-09-24",
-    },
-]
-SMALL_PLAN: list[dict[str, Any]] = [FULL_PLAN[0], FULL_PLAN[2]]
+from app.speech.deadlines import resolve
+
+_TASK = re.compile(
+    r"подготов|разработ|представ|предостав|обеспеч|поруч|провест|соглас|проработ|провер|состав|направ|организ|отч[её]т|жауапты|дайында|тапсыр",
+    re.IGNORECASE,
+)
+_ENUMERATION = re.compile(
+    r"(?:^|(?<=[.!?;])\s+|\s+)(?:первое|второе|третье|четв[её]ртое|пятое|шестое|седьмое|восьмое|девятое|десятое)(?:[.:)]|\s)|(?:^|(?<=[.!?;])\s+|\n\s*)\d{1,2}[.)]\s+",
+    re.IGNORECASE,
+)
+_NAME = r"[А-ЯЁӘҒҚҢӨҰҮҺІ][а-яёәғқңөұүһі]+(?:\s+[А-ЯЁӘҒҚҢӨҰҮҺІ][а-яёәғқңөұүһі]+){0,2}"
 
 
-def proposal_output(actions: list[dict[str, Any]], summary: str = "Assign the open jobs this week") -> str:
-    return json.dumps(
-        {
-            "outcome": "proposal_ready",
-            "message": "Plan ready for review.",
-            "proposal": {
-                "summary": summary,
-                "actions": actions,
-                "evidence": [
-                    {"kind": "record", "ref": "job:j-101", "note": "high priority, due 2026-09-24"},
-                    {"kind": "rule", "ref": "rule:daily_capacity", "note": None},
-                    {"kind": "tool_result", "ref": "tool_result:simulate_plan", "note": "feasible=true"},
-                ],
-                "assumptions": ["Existing assignments stay as they are"],
-                "expected_effects": [f"{len(actions)} job(s) move from unassigned to assigned"],
-            },
-            "missing_fields": [],
-            "blocking_constraints": [],
-        }
-    )
+def _deadline(text: str, anchor: date) -> tuple[str, date] | None:
+    # Try bounded phrases, longest first; the resolver rejects quantities and percentages.
+    for match in re.finditer(r"\b(?:до|к|через|за|by|until|завтра|ертең)\b", text, re.IGNORECASE):
+        tail = text[match.start():]
+        tail = re.split(r"[,;!?—]|\.(?!\d)", tail, maxsplit=1)[0]
+        tokens = tail.split()
+        for length in range(min(len(tokens), 7), 0, -1):
+            phrase = " ".join(tokens[:length]).rstrip('.')
+            resolved = resolve(phrase, anchor)
+            if resolved is not None:
+                return phrase, resolved
+    return None
 
 
-def needs_input_output() -> str:
-    return json.dumps(
-        {
-            "outcome": "needs_input",
-            "message": "Job j-107 has no required skill.",
-            "proposal": None,
-            "missing_fields": [{"field": "jobs.j-107.required_skill", "reason": "get_case lists j-107 as incomplete"}],
-            "blocking_constraints": [],
-        }
-    )
+def _actions(rows: list[dict], anchor: date) -> list[dict]:
+    actions = []
+    for row in rows:
+        for quote in _ENUMERATION.split(row["text"]):
+            quote = quote.strip(' .:;')
+            if not quote or not _TASK.search(quote):
+                continue
+            deadline = _deadline(quote, anchor)
+            if deadline is None:
+                continue
+            phrase, resolved = deadline
+            explicit = re.search(r"\b(?i:ответственн(?:ый|ая|ые)|жауапты)\s*[:—-]?\s*(" + _NAME + r")", quote)
+            address = re.match(r"^(" + _NAME + r"),", quote)
+            name = explicit or address
+            actions.append({
+                "action_id": f"a{len(actions) + 1}", "type": "action_item",
+                "text": quote[:500], "owner_name": name.group(1) if name else "не назначен",
+                "owner_speaker_id": row["speaker"], "deadline_text": phrase,
+                "deadline_date": resolved.isoformat(), "urgency": "средний",
+                "source_segment_ids": [row["id"]],
+            })
+            if len(actions) == 3:
+                return actions
+    return actions
 
 
-def infeasible_output() -> str:
-    return json.dumps(
-        {
-            "outcome": "infeasible",
-            "message": "Nobody can weld and nobody has 6h left today.",
-            "proposal": None,
-            "missing_fields": [],
-            "blocking_constraints": [
-                {"rule_id": "skill_match", "detail": "No worker has welding", "refs": ["job:j-109"]},
-                {"rule_id": "daily_capacity", "detail": "No HVAC worker has 6h on 2026-09-24", "refs": ["job:j-110"]},
-            ],
-        }
-    )
-
-
-def tool(name: str, arguments: dict[str, Any] | None = None, call_id: str = "call-1"):
-    return function_call(name, arguments or {}, call_id=call_id)
-
-
-def scripted(*steps) -> ScriptedModel:
-    return ScriptedModel(list(steps))
-
-
-def scripted_fallback_output() -> str:
-    return json.dumps(
-        {
-            "outcome": "infeasible",
-            "proposal": None,
-            "missing_fields": [],
-            "message": "Scripted mode: the canned plan no longer validates against the current data (the jobs are probably "
-            "already assigned). Reset the sample data or use a real model.",
-            "blocking_constraints": [
-                {"rule_id": "scripted_mode", "detail": "Canned plan rejected by the validator", "refs": []}
-            ],
-        }
-    )
-
-
-def happy_script(actions: list[dict[str, Any]] = FULL_PLAN) -> ScriptedModel:
-    return scripted(
-        [tool("get_case", {}, "c1")],
-        [tool("lookup_rules", {}, "c2")],
-        [tool("find_resources", {"skill": "electrical", "on_date": None}, "c3")],
-        [tool("simulate_plan", {"actions": actions}, "c4")],
-        [assistant_message(proposal_output(actions))],
-        [assistant_message(scripted_fallback_output())],
-    )
-
-
-def needs_input_script() -> ScriptedModel:
-    return scripted([tool("get_case", {}, "c1")], [assistant_message(needs_input_output())])
-
-
-def infeasible_script() -> ScriptedModel:
-    return scripted(
-        [tool("get_case", {}, "c1")],
-        [tool("find_resources", {"skill": "welding", "on_date": None}, "c2")],
-        [assistant_message(infeasible_output())],
-    )
-
-
-def revision_script() -> ScriptedModel:
-    return scripted(
-        [tool("get_case", {}, "c1")],
-        [assistant_message(proposal_output(BAD_PLAN))],
-        [tool("simulate_plan", {"actions": FULL_PLAN}, "c2")],
-        [assistant_message(proposal_output(FULL_PLAN))],
-    )
-
-
-def tool_failure_script() -> ScriptedModel:
-    return scripted(
-        [tool("find_resources", {"skill": None, "on_date": "not-a-date"}, "c1")],
-        [tool("find_resources", {"skill": None, "on_date": "2026-09-24"}, "c2")],
-        [assistant_message(proposal_output(FULL_PLAN))],
-    )
-
-
-def model_error_script() -> ScriptedModel:
-    return scripted([tool("get_case", {}, "c1")], ModelStep.raise_error(RuntimeError("simulated provider outage")))
-
-
-SCRIPTS: dict[str, Callable[[], ScriptedModel]] = {
-    "happy": happy_script,
-    "reduced_capacity": lambda: happy_script(REDUCED_CAPACITY_PLAN),
-    "needs_input": needs_input_script,
-    "infeasible": infeasible_script,
-    "revision": revision_script,
-    "tool_failure": tool_failure_script,
-    "model_error": model_error_script,
-}
+def _output(call, meeting_date: date):
+    rows = []
+    not_ready = False
+    for item in call.input:
+        if not isinstance(item, dict) or item.get("type") != "function_call_output":
+            continue
+        try:
+            envelope = json.loads(item["output"])
+        except (ValueError, TypeError, KeyError):
+            continue
+        if not envelope.get("ok"):
+            not_ready = True
+        data = envelope.get("data", {})
+        if isinstance(data, dict) and "segments" in data:
+            rows = data["segments"]
+    if not_ready:
+        return [
+            assistant_message(
+                json.dumps(
+                    {
+                        "outcome": "needs_input",
+                        "message": "Сначала распознайте запись",
+                        "proposal": None,
+                        "missing_fields": [{"field": "transcript", "reason": "Стенограмма ещё не готова"}],
+                        "blocking_constraints": [],
+                    },
+                    ensure_ascii=False,
+                )
+            )
+        ]
+    actions = _actions(rows, meeting_date)
+    evidence = [{"kind": "record", "ref": f"segment:{action['source_segment_ids'][0]}", "note": action["text"]} for action in actions]
+    summary = "Демонстрационный режим: выбраны цитаты с указанием срока; проверьте поручения и ответственных."
+    output = {
+        "outcome": "proposal_ready",
+        "message": summary if actions else "В стенограмме не найдены поручения с явным сроком.",
+        "proposal": {
+            "summary": summary,
+            "actions": actions,
+            "decisions": [],
+            "evidence": evidence,
+            "assumptions": ["Демонстрационный алгоритм выбирает не более трёх цитат с предлогом срока"],
+            "expected_effects": ["Поручения доступны для проверки"],
+        },
+        "missing_fields": [],
+        "blocking_constraints": [],
+    }
+    return [assistant_message(json.dumps(output, ensure_ascii=False))]
 
 
 def auto_script(case_ref: str, case_input: dict[str, Any]) -> ScriptedModel:
-    if case_ref == "case-dispatch-002":
-        return needs_input_script()
-    if case_ref == "case-dispatch-003":
-        return infeasible_script()
-    if case_input.get("capacity_overrides"):
-        return happy_script(REDUCED_CAPACITY_PLAN)
-    return happy_script()
+    anchor = date.fromisoformat(case_input["meeting_date"])
+    return ScriptedModel(
+        [
+            [function_call("get_meeting", {}, call_id="meeting")],
+            [function_call("read_transcript", {"offset": 0, "limit": 0}, call_id="transcript")],
+            ModelStep.respond(lambda call: _output(call, anchor)),
+        ]
+    )
+
+
+SCRIPTS = {"auto": lambda: auto_script("m-sample-1", {"meeting_date": "2026-09-23"})}

@@ -1,6 +1,6 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field, create_model
@@ -22,6 +22,8 @@ class ActionBase(BaseModel):
 
 
 class ProposalBase(BaseModel):
+    allow_empty_actions: ClassVar[bool] = False
+
     summary: str = Field(description="One or two sentences a manager can read in five seconds")
     actions: list[ActionBase]
     evidence: list[EvidenceRef] = Field(
@@ -86,7 +88,7 @@ def structural_checks(proposal: ProposalBase) -> list[ValidationCheck]:
         ValidationCheck(
             rule_id="non_empty_plan",
             label="Plan has actions",
-            status="pass" if ids else "fail",
+            status="pass" if ids or proposal.allow_empty_actions else "fail",
             message=f"{len(ids)} action(s)" if ids else "The proposal contains no actions",
         ),
         ValidationCheck(
@@ -185,6 +187,7 @@ class DomainModule:
         [AsyncSession, str, BaseModel, ProposalBase, list[ActionResult]], Awaitable[VerificationReport]
     ]
     seed: Callable[[AsyncSession], Awaitable[dict[str, int]]]
+    required_tools: tuple[str, ...] = ()
     examples: list[ExampleCase] = field(default_factory=list)
     api_router: APIRouter | None = None
     scripts: dict[str, Callable[[], Any]] = field(default_factory=dict)

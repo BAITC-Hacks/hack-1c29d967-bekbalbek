@@ -6,27 +6,34 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
 from app.api.deps import ServicesDep, SessionDep
 from app.core.contracts import CaseNotFound
 from app.domain import repo
-from app.domain.examples import EXAMPLES
-from app.domain.models import ActionItem, DispatchWorker, Meeting, MeetingSpeaker, Protocol
-from app.domain.seed import seed
+from app.domain.examples import GOAL
+from app.domain.models import ActionItem, Meeting, MeetingSpeaker, Protocol
+from app.domain.seed import SAMPLES, seed
 from app.domain.service import load_case_view
 
 router = APIRouter(prefix="/api/domain", tags=["domain"])
 
 
-class WorkerPatch(BaseModel):
-    capacity_hours: int | None = Field(default=None, ge=0, le=24)
-    unavailable_dates: list[date] | None = Field(default=None, max_length=60)
-
-
 @router.get("/examples")
-async def list_examples() -> dict:
-    return {"examples": [e.model_dump() for e in EXAMPLES]}
+async def list_examples(session: SessionDep) -> dict:
+    meetings = await session.scalars(select(Meeting).order_by(Meeting.created_at, Meeting.id))
+    return {
+        "examples": [
+            {
+                "id": m.id,
+                "title": m.title,
+                "description": "Запись совещания",
+                "expected_outcome": "proposal_ready",
+                "request": {"case_ref": m.id, "goal": GOAL, "input": {"meeting_date": m.meeting_date.isoformat()}},
+            }
+            for m in meetings
+        ]
+    }
 
 
 @router.get("/cases/{case_ref}")
@@ -39,30 +46,14 @@ async def get_case_view(case_ref: str, session: SessionDep) -> dict:
 
 @router.post("/reset")
 async def reset_sample_data(session: SessionDep) -> dict:
+    from app.db.models import Run
+
     async with session.begin():
+        sample_ids = [sample[0] for sample in SAMPLES]
+        await session.execute(delete(Run).where(Run.case_ref.in_(sample_ids)))
+        await session.execute(delete(Meeting).where(Meeting.id.in_(sample_ids)))
         counts = await seed(session)
     return {"status": "ok", "seeded": counts}
-
-
-@router.patch("/workers/{worker_id}")
-async def patch_worker(worker_id: str, patch: WorkerPatch, session: SessionDep) -> dict:
-    async with session.begin():
-        worker = await session.get(DispatchWorker, worker_id)
-        if worker is None:
-            raise HTTPException(
-                status_code=404, detail={"code": "worker_not_found", "message": f"Unknown worker {worker_id}"}
-            )
-        if patch.capacity_hours is not None:
-            worker.capacity_hours = patch.capacity_hours
-        if patch.unavailable_dates is not None:
-            worker.unavailable_dates = [d.isoformat() for d in patch.unavailable_dates]
-        snapshot = {
-            "id": worker.id,
-            "name": worker.name,
-            "capacity_hours": worker.capacity_hours,
-            "unavailable_dates": list(worker.unavailable_dates),
-        }
-    return {"worker": snapshot}
 
 
 class SpeakerPatch(BaseModel):

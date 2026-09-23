@@ -20,7 +20,7 @@ from app.core.llm import configure_model_provider
 from app.core.run_service import RunService
 from app.db.base import Base
 from app.domain import DOMAIN
-from evals.scenarios import SCENARIOS, Scenario
+from evals.scenarios import SCENARIOS, Scenario, prepare_transcript
 
 RESULTS_DIR = Path(__file__).parent / "results"
 
@@ -40,6 +40,7 @@ async def run_scenario(scenario: Scenario, session_factory, settings: Settings, 
     bus = EventBus(session_factory)
     async with session_factory() as session, session.begin():
         await DOMAIN.seed(session)
+        await prepare_transcript(session)
     factory = (lambda run: settings.openai_model) if live else (lambda run: DOMAIN.scripts[scenario.script]())
     runs = RunService(session_factory, DOMAIN, settings, bus, factory)
     applies = ApplyService(session_factory, DOMAIN, bus)

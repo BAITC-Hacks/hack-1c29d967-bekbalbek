@@ -2,30 +2,30 @@ import dataclasses
 
 import pytest
 from agents.testing import assistant_message
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from app.core.apply_service import ApplyError, ApplyService
 from app.core.contracts import ExecutionError, VerificationCheck, VerificationReport
 from app.core.run_service import RunService
 from app.db.models import Application
-from app.domain.models import DispatchAssignment, DispatchJob, DispatchWorker
+from app.domain.models import ActionItem, MeetingSegment, Protocol
 from tests.core.scripted import SMALL_PLAN, happy_script, needs_input_output, scripted, tool
 
-CASE = "case-dispatch-001"
+CASE = "m-sample-1"
 
 
 async def proposed_run(session_factory, domain, settings, bus, actions=SMALL_PLAN):
     service = RunService(session_factory, domain, settings, bus, model_factory=lambda _run: happy_script(actions))
-    run = await service.create_run(case_ref=CASE, goal="g", input={"planning_start": "2026-09-24"})
+    run = await service.create_run(case_ref=CASE, goal="g", input={"meeting_date": "2026-09-23"})
     await service.execute(run.id)
     detail = await service.get_run_detail(run.id)
     assert detail.run.status == "proposed"
     return service, detail
 
 
-async def assignment_count(session_factory) -> int:
+async def action_count(session_factory) -> int:
     async with session_factory() as session:
-        return (await session.execute(select(func.count()).select_from(DispatchAssignment))).scalar_one()
+        return (await session.execute(select(func.count()).select_from(ActionItem))).scalar_one()
 
 
 async def test_should_apply_once_verify_and_record_every_action(session_factory, domain, settings, bus, seeded) -> None:
@@ -38,13 +38,13 @@ async def test_should_apply_once_verify_and_record_every_action(session_factory,
     assert [a.action_id for a in application.actions] == ["a1", "a3"] and all(
         a.status == "applied" for a in application.actions
     )
-    assert "Chen" in application.actions[0].summary
+    assert application.actions[0].summary
     after = await service.get_run_detail(detail.run.id)
     assert after.run.status == "verified" and after.proposal.status == "applied" and after.snapshot_after is not None
-    assert after.snapshot_after["workers"][2]["load_by_date"]["2026-09-24"] == 3
-    assert await assignment_count(session_factory) == 4
+    assert after.snapshot_after["action_items"] == 2
+    assert await action_count(session_factory) == 2
     async with session_factory() as session:
-        assert (await session.get(DispatchJob, "j-101")).status == "assigned"
+        assert (await session.execute(select(func.count()).select_from(Protocol))).scalar_one() == 1
     types = [e.type for e in await bus.replay(detail.run.id)]
     assert types[-4:] == ["action_applied", "action_applied", "verification_finished", "run_finished"]
     assert (await bus.replay(detail.run.id))[-1].run_status == "verified"
@@ -60,7 +60,7 @@ async def test_should_reject_a_duplicate_apply_without_writing_twice(
     with pytest.raises(ApplyError) as exc:
         await apply.apply(detail.run.id, detail.proposal.id, detail.proposal.version)
     assert exc.value.code == "duplicate_apply"
-    assert await assignment_count(session_factory) == 4
+    assert await action_count(session_factory) == 2
 
 
 async def test_should_reject_concurrent_duplicate_applies(session_factory, domain, settings, bus, seeded) -> None:
@@ -76,7 +76,7 @@ async def test_should_reject_concurrent_duplicate_applies(session_factory, domai
     errors = [r for r in results if isinstance(r, ApplyError)]
     successes = [r for r in results if not isinstance(r, BaseException)]
     assert len(successes) == 1 and len(errors) == 1 and errors[0].code == "duplicate_apply"
-    assert await assignment_count(session_factory) == 4
+    assert await action_count(session_factory) == 2
 
 
 async def test_should_reject_a_stale_proposal_when_the_data_changed(
@@ -84,8 +84,7 @@ async def test_should_reject_a_stale_proposal_when_the_data_changed(
 ) -> None:
     service, detail = await proposed_run(session_factory, domain, settings, bus)
     async with session_factory() as session, session.begin():
-        chen = await session.get(DispatchWorker, "w-chen")
-        chen.unavailable_dates = [*chen.unavailable_dates, "2026-09-24"]
+        await session.execute(delete(MeetingSegment).where(MeetingSegment.id == 1))
 
     with pytest.raises(ApplyError) as exc:
         await ApplyService(session_factory, domain, bus).apply(
@@ -94,12 +93,12 @@ async def test_should_reject_a_stale_proposal_when_the_data_changed(
 
     assert exc.value.code == "stale_proposal"
     assert exc.value.details["fingerprint_changed"] is True
-    assert any(c["rule_id"] == "availability" for c in exc.value.details["validation"]["errors"])
+    assert any(c["rule_id"] == "evidence_exists" for c in exc.value.details["validation"]["errors"])
     after = await service.get_run_detail(detail.run.id)
     assert (
         after.run.status == "proposed" and after.proposal.status == "stale" and after.application.status == "rejected"
     )
-    assert await assignment_count(session_factory) == 2
+    assert await action_count(session_factory) == 0
     assert [e.type for e in await bus.replay(detail.run.id)][-2:] == ["apply_started", "apply_rejected"]
 
 
@@ -121,9 +120,9 @@ async def test_should_reject_runs_that_are_not_in_proposed_state(
         domain,
         settings,
         bus,
-        model_factory=lambda _run: scripted([tool("get_case")], [assistant_message(needs_input_output())]),
+        model_factory=lambda _run: scripted([tool("get_meeting")], [assistant_message(needs_input_output())]),
     )
-    run = await service.create_run(case_ref="case-dispatch-002", goal="g", input={"planning_start": "2026-09-24"})
+    run = await service.create_run(case_ref="m-sample-2", goal="g", input={"meeting_date": "2026-09-23"})
     await service.execute(run.id)
     with pytest.raises(ApplyError) as exc:
         await ApplyService(session_factory, domain, bus).apply(run.id, run.id, 1)
@@ -145,11 +144,11 @@ async def test_should_roll_back_every_write_when_execution_fails_midway(
         await apply.apply(detail.run.id, detail.proposal.id, detail.proposal.version)
 
     assert exc.value.code == "execution_failed"
-    assert await assignment_count(session_factory) == 2
+    assert await action_count(session_factory) == 0
     after = await service.get_run_detail(detail.run.id)
     assert after.run.status == "failed" and after.run.error["stage"] == "apply" and after.application.status == "failed"
     async with session_factory() as session:
-        assert (await session.get(DispatchJob, "j-101")).status == "unassigned"
+        assert (await session.execute(select(func.count()).select_from(Protocol))).scalar_one() == 0
     assert (await bus.replay(detail.run.id))[-1].type == "run_failed"
 
 
@@ -172,3 +171,16 @@ async def test_should_mark_the_run_failed_when_verification_fails(
     assert [e.type for e in events][-2:] == ["verification_finished", "run_failed"]
     async with session_factory() as session:
         assert (await session.execute(select(func.count()).select_from(Application))).scalar_one() == 1
+
+
+async def test_empty_protocol_is_persisted_and_verified(session_factory, domain, settings, bus, seeded):
+    service, detail = await proposed_run(session_factory, domain, settings, bus, actions=[])
+    result = await ApplyService(session_factory, domain, bus).apply(
+        detail.run.id, detail.proposal.id, detail.proposal.version
+    )
+    assert result.status == "verified"
+    assert result.actions == []
+    assert await action_count(session_factory) == 0
+    async with session_factory() as session:
+        assert (await session.execute(select(func.count()).select_from(Protocol))).scalar_one() == 1
+    assert (await service.get_run_detail(detail.run.id)).snapshot_after["protocol_exists"] is True

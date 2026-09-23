@@ -78,3 +78,10 @@ def test_should_fail_structural_checks_on_empty_action_list() -> None:
     proposal = DemoProposal(summary="s", actions=[])
     failures = [c for c in structural_checks(proposal) if c.status == "fail"]
     assert [c.rule_id for c in failures] == ["non_empty_plan"]
+
+
+def test_protocol_allows_a_meeting_without_action_items() -> None:
+    from app.domain.schemas import ProtocolProposal
+
+    proposal = ProtocolProposal(summary="Обсуждение без поручений", actions=[])
+    assert all(check.status != "fail" for check in structural_checks(proposal))

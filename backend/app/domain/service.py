@@ -1,179 +1,235 @@
 import hashlib
 import json
+import uuid
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.contracts import ActionResult, ExecutionError, ValidationReport, VerificationCheck, VerificationReport
-from app.core.serialization import jsonable
-from app.domain.models import DispatchAssignment, DispatchJob, DispatchWorker
-from app.domain.records import apply_job_overrides
-from app.domain.repo import (
-    get_case_row,
-    horizon,
-    job_to_record,
-    list_assignments,
-    list_jobs,
-    list_workers,
-    load_plan_context,
+from app.core.contracts import (
+    ActionResult,
+    EvidenceRef,
+    ExecutionError,
+    ValidationCheck,
+    ValidationReport,
+    VerificationCheck,
+    VerificationReport,
 )
-from app.domain.rules import RULES, evaluate_plan, load_by_worker_day
-from app.domain.schemas import CaseInput, DispatchProposal
+from app.core.serialization import jsonable
+from app.domain import repo
+from app.domain.models import ActionItem, Meeting, Protocol
+from app.domain.schemas import CaseInput, ProtocolProposal
+from app.speech.deadlines import resolve
 
 
-def rules_as_dicts() -> list[dict[str, str]]:
-    return [
-        {"id": r.id, "label": r.label, "severity": r.severity, "source": r.source, "description": r.description}
-        for r in RULES.values()
-    ]
+def row_dict(row) -> dict:
+    return {column.key: getattr(row, column.key) for column in row.__table__.columns}
 
 
 async def load_case_view(session: AsyncSession, case_ref: str) -> dict[str, Any]:
-    case = await get_case_row(session, case_ref)
-    days = horizon(case.planning_start)
+    meeting = await repo.get_meeting(session, case_ref)
+    protocol = await session.scalar(
+        select(Protocol).where(Protocol.meeting_id == case_ref).order_by(Protocol.confirmed_at.desc()).limit(1)
+    )
+    items = (
+        list(
+            await session.scalars(
+                select(ActionItem).where(ActionItem.protocol_id == protocol.id).order_by(ActionItem.id)
+            )
+        )
+        if protocol
+        else []
+    )
     return jsonable(
         {
-            "case_ref": case.case_ref,
-            "title": case.title,
-            "description": case.description,
-            "planning_start": case.planning_start,
-            "dates": days,
-            "workers": await list_workers(session),
-            "jobs": await list_jobs(session, case_ref),
-            "assignments": [jsonable(a) for a in await list_assignments(session, days[0], days[-1])],
-            "rules": rules_as_dicts(),
+            "case_ref": meeting.id,
+            "title": meeting.title,
+            "description": "Стенограмма и поручения совещания",
+            "status": meeting.status,
+            "meeting_date": meeting.meeting_date,
+            "duration_s": meeting.duration_s,
+            "error": meeting.error,
+            "meeting": row_dict(meeting),
+            "speakers": [row_dict(s) for s in await repo.list_speakers(session, case_ref)],
+            "segments": [row_dict(s) for s in await repo.list_segments(session, case_ref)],
+            "protocol": row_dict(protocol) if protocol else None,
+            "action_items": [row_dict(a) for a in items],
         }
     )
 
 
 async def validate_proposal(
-    session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: DispatchProposal
+    session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: ProtocolProposal
 ) -> ValidationReport:
-    ctx = await load_plan_context(session, case_ref, case_input)
-    return evaluate_plan(ctx, proposal.actions)
+    meeting = await repo.get_meeting(session, case_ref)
+    segments = {s.id: s for s in await repo.list_segments(session, case_ref)}
+    speakers = {s.speaker_id for s in await repo.list_speakers(session, case_ref)}
+    checks = []
+    if meeting.status != "ready":
+        checks.append(
+            ValidationCheck(
+                rule_id="transcript_ready",
+                label="Стенограмма готова",
+                status="fail",
+                message="Сначала распознайте запись",
+            )
+        )
+    evidence = []
+    for action in proposal.actions:
+        refs = [f"segment:{sid}" for sid in action.source_segment_ids]
+        valid = all(sid in segments for sid in action.source_segment_ids)
+        checks.append(
+            ValidationCheck(
+                rule_id="evidence_exists",
+                label="Цитата принадлежит совещанию",
+                status="pass" if valid else "fail",
+                message="Цитаты найдены" if valid else "Указан неизвестный сегмент стенограммы",
+                action_id=action.action_id,
+                refs=refs,
+            )
+        )
+        known = action.owner_speaker_id is None or action.owner_speaker_id in speakers
+        checks.append(
+            ValidationCheck(
+                rule_id="owner_known",
+                label="Говорящий известен",
+                status="pass" if known else "fail",
+                message="Говорящий проверен" if known else "Неизвестный говорящий",
+                action_id=action.action_id,
+            )
+        )
+        normalized = resolve(action.deadline_text, meeting.meeting_date)
+        changed = normalized != action.deadline_date
+        action.deadline_date = normalized
+        checks.append(
+            ValidationCheck(
+                rule_id="deadline_consistent",
+                label="Срок проверен",
+                status="warn" if changed else "pass",
+                message="Дата приведена к произнесённому сроку; неизвестный срок оставлен пустым"
+                if changed
+                else "Срок согласован",
+                action_id=action.action_id,
+            )
+        )
+        named = bool(action.owner_name.strip())
+        if not named:
+            action.owner_name = "не назначен"
+        checks.append(
+            ValidationCheck(
+                rule_id="owner_named",
+                label="Ответственный указан",
+                status="pass" if named else "warn",
+                message="Имя указано" if named else "Ответственный не назначен",
+                action_id=action.action_id,
+            )
+        )
+        for sid in action.source_segment_ids:
+            if sid in segments:
+                evidence.append(EvidenceRef(kind="record", ref=f"segment:{sid}", note=segments[sid].text))
+    proposal.evidence = list({e.ref: e for e in evidence}.values())
+    return ValidationReport.from_checks(checks)
 
 
-async def fingerprint(session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: DispatchProposal) -> str:
-    ctx = await load_plan_context(session, case_ref, case_input)
+async def fingerprint(session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: ProtocolProposal) -> str:
+    meeting = await repo.get_meeting(session, case_ref)
     basis = {
-        "workers": sorted(jsonable(list(ctx.workers.values())), key=lambda w: w["id"]),
-        "jobs": sorted(jsonable(list(ctx.jobs.values())), key=lambda j: j["id"]),
-        "assignments": sorted(
-            jsonable(ctx.assignments), key=lambda a: (a["worker_id"], a["scheduled_date"], a["job_id"])
-        ),
+        "meeting": row_dict(meeting),
+        "segments": [row_dict(s) for s in await repo.list_segments(session, case_ref)],
+        "speakers": [row_dict(s) for s in await repo.list_speakers(session, case_ref)],
     }
-    return hashlib.sha256(json.dumps(basis, sort_keys=True).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(jsonable(basis), sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-async def snapshot(session: AsyncSession, case_ref: str, case_input: CaseInput) -> dict[str, Any]:
-    ctx = await load_plan_context(session, case_ref, case_input)
-    load = load_by_worker_day(ctx, [])
-    return jsonable(
-        {
-            "planning_start": ctx.planning_start,
-            "workers": [
-                {"id": w.id, "name": w.name, "capacity_hours": w.capacity_hours, "load_by_date": load.get(w.id, {})}
-                for w in ctx.workers.values()
-            ],
-            "assignments": ctx.assignments,
-            "jobs": [{"id": j.id, "status": j.status} for j in ctx.jobs.values()],
-        }
-    )
+async def snapshot(session: AsyncSession, case_ref: str, case_input: CaseInput) -> dict:
+    view = await load_case_view(session, case_ref)
+    return {"action_items": len(view["action_items"]), "protocol_exists": view["protocol"] is not None}
 
 
 async def execute_actions(
-    session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: DispatchProposal, action_keys: dict[str, str]
+    session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: ProtocolProposal, action_keys: dict[str, str]
 ) -> list[ActionResult]:
-    await get_case_row(session, case_ref)
-    results: list[ActionResult] = []
+    await session.get(Meeting, case_ref, with_for_update=True)
+    report = await validate_proposal(session, case_ref, case_input, proposal)
+    if not report.ok:
+        raise ExecutionError("invalid_proposal", "Поручения не подтверждены стенограммой")
+    protocol = Protocol(
+        id=str(uuid.uuid4()), meeting_id=case_ref, run_id=None, summary=proposal.summary, decisions=proposal.decisions
+    )
+    session.add(protocol)
+    await session.flush()
+    results = []
     for action in proposal.actions:
-        job = await session.get(DispatchJob, action.job_id, with_for_update=True)
-        worker = await session.get(DispatchWorker, action.worker_id)
-        if job is None or worker is None:
-            raise ExecutionError("record_missing", f"Job {action.job_id} or worker {action.worker_id} no longer exists")
-        if job.status != "unassigned":
-            raise ExecutionError("job_not_unassigned", f"Job {job.id} is already {job.status}")
-        effective = apply_job_overrides(job_to_record(job), case_input)
-        if effective.required_skill is None or effective.duration_hours is None:
-            raise ExecutionError("job_incomplete", f"Job {job.id} is missing required_skill or duration_hours")
-        job.required_skill = effective.required_skill
-        job.duration_hours = effective.duration_hours
-        job.status = "assigned"
-        session.add(
-            DispatchAssignment(
-                job_id=job.id,
-                worker_id=worker.id,
-                scheduled_date=action.scheduled_date,
-                hours=effective.duration_hours,
-                source_action_key=action_keys[action.action_id],
-            )
+        item = ActionItem(
+            id=str(uuid.uuid4()),
+            protocol_id=protocol.id,
+            meeting_id=case_ref,
+            action_key=action_keys[action.action_id],
+            text=action.text,
+            owner_name=action.owner_name,
+            owner_speaker_id=action.owner_speaker_id,
+            deadline_text=action.deadline_text,
+            deadline_date=action.deadline_date,
+            urgency=action.urgency,
+            status="new",
+            source_segment_ids=action.source_segment_ids,
         )
+        session.add(item)
         await session.flush()
         results.append(
             ActionResult(
                 action_id=action.action_id,
                 type=action.type,
-                summary=f"{job.id} → {worker.name} on {action.scheduled_date.isoformat()} ({effective.duration_hours}h)",
-                result={
-                    "job_id": job.id,
-                    "worker_id": worker.id,
-                    "scheduled_date": action.scheduled_date.isoformat(),
-                    "hours": effective.duration_hours,
-                    "action_key": action_keys[action.action_id],
-                },
+                summary=f"{action.text} — {action.owner_name}",
+                result=jsonable(row_dict(item)),
             )
         )
     return results
 
 
 async def verify_outcome(
-    session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: DispatchProposal, results: list[ActionResult]
+    session: AsyncSession, case_ref: str, case_input: CaseInput, proposal: ProtocolProposal, results: list[ActionResult]
 ) -> VerificationReport:
-    checks: list[VerificationCheck] = []
-    for action in proposal.actions:
-        row = (
-            await session.execute(select(DispatchAssignment).where(DispatchAssignment.job_id == action.job_id))
-        ).scalar_one_or_none()
-        job = await session.get(DispatchJob, action.job_id)
-        recorded = row is not None and row.worker_id == action.worker_id and row.scheduled_date == action.scheduled_date
-        checks.append(
-            VerificationCheck(
-                id=f"assignment_recorded:{action.action_id}",
-                label=f"{action.job_id} assignment stored",
-                ok=recorded,
-                detail=(
-                    f"{action.job_id} → {row.worker_id} on {row.scheduled_date} ({row.hours}h) found in dispatch_assignments"
-                    if recorded
-                    else f"No matching assignment for {action.job_id} → {action.worker_id} on {action.scheduled_date}"
-                ),
-            )
-        )
-        checks.append(
-            VerificationCheck(
-                id=f"job_status:{action.action_id}",
-                label=f"{action.job_id} marked assigned",
-                ok=job is not None and job.status == "assigned",
-                detail=f"status = {job.status}" if job else "job missing",
-            )
-        )
-    ctx = await load_plan_context(session, case_ref, case_input)
-    load = load_by_worker_day(ctx, [])
-    touched = {(a.worker_id, a.scheduled_date.isoformat()) for a in proposal.actions}
-    over = [
-        f"{w} on {d}: {load.get(w, {}).get(d, 0)}h > {ctx.workers[w].capacity_hours}h"
-        for w, d in sorted(touched)
-        if w in ctx.workers and load.get(w, {}).get(d, 0) > ctx.workers[w].capacity_hours
-    ]
-    checks.append(
-        VerificationCheck(
-            id="capacity_respected",
-            label="Committed load within capacity",
-            ok=not over,
-            detail="; ".join(over) if over else "No worker exceeds daily capacity after the change",
+    protocol_id = (
+        results[0].result["protocol_id"]
+        if results
+        else await session.scalar(
+            select(Protocol.id).where(Protocol.meeting_id == case_ref).order_by(Protocol.confirmed_at.desc()).limit(1)
         )
     )
-    stored = sum(1 for c in checks if c.id.startswith("assignment_recorded:") and c.ok)
-    summary = f"{stored} of {len(proposal.actions)} assignment(s) confirmed in the database"
-    summary += "; capacity respected" if not over else "; capacity violated"
-    return VerificationReport.from_checks(checks, summary)
+    protocol = await session.get(Protocol, protocol_id) if protocol_id else None
+    items = (
+        list(await session.scalars(select(ActionItem).where(ActionItem.protocol_id == protocol_id))) if protocol else []
+    )
+    checks = [
+        VerificationCheck(
+            id="protocol_stored",
+            label="Протокол сохранён",
+            ok=protocol is not None
+            and protocol.summary == proposal.summary
+            and protocol.decisions == proposal.decisions,
+            detail=str(protocol_id),
+        ),
+        VerificationCheck(
+            id="action_count",
+            label="Все поручения сохранены",
+            ok=len(items) == len(proposal.actions) == len(results),
+            detail=f"{len(items)} / {len(proposal.actions)}",
+        ),
+    ]
+    for action, result in zip(proposal.actions, results, strict=False):
+        item = next((a for a in items if a.id == result.result["id"]), None)
+        checks.append(
+            VerificationCheck(
+                id=f"action_stored:{action.action_id}",
+                label="Поручение проверено",
+                ok=item is not None
+                and bool(item.text.strip())
+                and item.text == action.text
+                and item.owner_name == action.owner_name
+                and item.deadline_date == action.deadline_date
+                and item.source_segment_ids == action.source_segment_ids,
+                detail=action.text,
+            )
+        )
+    return VerificationReport.from_checks(checks, f"Сохранено поручений: {len(items)}")

@@ -18,7 +18,7 @@ async def test_should_persist_events_with_a_per_run_sequence(session_factory) ->
     run_a, run_b = await make_run(session_factory), await make_run(session_factory)
 
     first = await bus.emit(run_a, "run_started", {"goal": "g"}, run_status="analyzing")
-    second = await bus.emit(run_a, "tool_started", {"tool": "get_case"}, run_status="analyzing")
+    second = await bus.emit(run_a, "tool_started", {"tool": "get_meeting"}, run_status="analyzing")
     other = await bus.emit(run_b, "run_started", {}, run_status="analyzing")
 
     assert (first.id, second.id, other.id) == (1, 2, 1)

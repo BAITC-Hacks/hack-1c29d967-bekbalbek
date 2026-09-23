@@ -3,13 +3,13 @@ import pytest
 from app.config import Settings
 from app.core.events import EventBus
 from app.domain import DOMAIN
-from app.domain.seed import seed
+from tests.core.scripted import seed_ready_meetings
 
 
 @pytest.fixture
 async def seeded(session_factory) -> dict[str, int]:
     async with session_factory() as session, session.begin():
-        return await seed(session)
+        return await seed_ready_meetings(session)
 
 
 @pytest.fixture
@@ -26,6 +26,7 @@ def settings() -> Settings:
         tool_max_retries=1,
         agent_max_revisions=1,
         openai_model="scripted",
+        openai_api_key=None,
     )
 
 

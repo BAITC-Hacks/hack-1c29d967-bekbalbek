@@ -1,6 +1,7 @@
 from typing import Any
 
-from agents import Agent, Model, RunConfig, Runner, RunResult
+from agents import Agent, Model, ModelSettings, RunConfig, Runner, RunResult
+from openai.types.shared import Reasoning
 
 from app.config import Settings
 from app.core.context import RunContext
@@ -29,5 +30,5 @@ class AgentRuntime:
             input,
             context=run_ctx,
             max_turns=max_turns,
-            run_config=RunConfig(model=self._model, tracing_disabled=True),
+            run_config=RunConfig(model=self._model, tracing_disabled=True, model_settings=ModelSettings(reasoning=Reasoning(effort="none"), max_tokens=6000, temperature=0.2, extra_body={"response_format": None}, tool_choice="required" if self._domain.tools else None)),
         )

@@ -5,14 +5,14 @@ from httpx import ASGITransport, AsyncClient
 
 from app.config import Settings
 from app.domain import DOMAIN
-from app.domain.seed import seed
 from app.main import create_app
+from tests.core.scripted import seed_ready_meetings
 
 
 @pytest.fixture
 async def seeded(session_factory) -> dict[str, int]:
     async with session_factory() as session, session.begin():
-        return await seed(session)
+        return await seed_ready_meetings(session)
 
 
 @pytest.fixture

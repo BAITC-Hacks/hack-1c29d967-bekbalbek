@@ -24,8 +24,8 @@ from tests.core.scripted import (
     tool,
 )
 
-CASE = "case-dispatch-001"
-GOAL = "Assign every open job."
+CASE = "m-sample-1"
+GOAL = "Составь протокол."
 
 
 def make_service(session_factory, domain, settings, bus, model) -> RunService:
@@ -34,7 +34,7 @@ def make_service(session_factory, domain, settings, bus, model) -> RunService:
 
 async def run_to_completion(service: RunService, case_ref: str = CASE, input: dict | None = None, **options):
     run = await service.create_run(
-        case_ref=case_ref, goal=GOAL, input=input or {"planning_start": "2026-09-24"}, **options
+        case_ref=case_ref, goal=GOAL, input=input or {"meeting_date": "2026-09-23"}, **options
     )
     await service.execute(run.id)
     return run.id
@@ -43,13 +43,11 @@ async def run_to_completion(service: RunService, case_ref: str = CASE, input: di
 async def test_should_create_a_queued_run_with_validated_input(session_factory, domain, settings, bus, seeded) -> None:
     service = make_service(session_factory, domain, settings, bus, happy_script())
     run = await service.create_run(
-        case_ref=CASE, goal=GOAL, input={"planning_start": "2026-09-24", "job_ids": ["j-101"]}
+        case_ref=CASE, goal=GOAL, input={"meeting_date": "2026-09-23"}
     )
     assert run.status == "queued" and run.input == {
-        "planning_start": "2026-09-24",
-        "job_ids": ["j-101"],
-        "job_overrides": {},
-        "capacity_overrides": {},
+        "meeting_date": "2026-09-23",
+        "language": "auto",
         "notes": None,
     }
     assert run.model == "scripted" and run.max_turns == 8
@@ -58,9 +56,9 @@ async def test_should_create_a_queued_run_with_validated_input(session_factory, 
 async def test_should_reject_invalid_input_and_unknown_cases(session_factory, domain, settings, bus, seeded) -> None:
     service = make_service(session_factory, domain, settings, bus, happy_script())
     with pytest.raises(ValidationError):
-        await service.create_run(case_ref=CASE, goal=GOAL, input={"planning_start": "not-a-date"})
+        await service.create_run(case_ref=CASE, goal=GOAL, input={"meeting_date": "not-a-date"})
     with pytest.raises(CaseNotFound):
-        await service.create_run(case_ref="nope", goal=GOAL, input={"planning_start": "2026-09-24"})
+        await service.create_run(case_ref="nope", goal=GOAL, input={"meeting_date": "2026-09-23"})
 
 
 async def test_should_produce_a_validated_proposal_from_real_tool_calls(
@@ -72,7 +70,7 @@ async def test_should_produce_a_validated_proposal_from_real_tool_calls(
     detail = await service.get_run_detail(run_id)
     assert detail.run.status == "proposed" and detail.run.outcome == "proposal_ready"
     assert detail.proposal is not None and detail.proposal.version == 1 and detail.proposal.status == "validated"
-    assert detail.proposal.validation["ok"] is True and len(detail.proposal.content["actions"]) == 6
+    assert detail.proposal.validation["ok"] is True and len(detail.proposal.content["actions"]) == 3
     assert len(detail.proposal.basis_fingerprint) == 64
     assert detail.snapshot_before is not None and detail.run.stats.tool_calls == 4
     assert detail.run.stats.usage is not None and detail.run.stats.duration_ms is not None
@@ -110,33 +108,34 @@ async def test_should_persist_the_conversation_history(session_factory, domain, 
 async def test_should_end_with_needs_input_and_the_missing_fields(
     session_factory, domain, settings, bus, seeded
 ) -> None:
-    model = scripted([tool("get_case")], [assistant_message(needs_input_output())])
+    model = scripted([tool("get_meeting")], [assistant_message(needs_input_output())])
     service = make_service(session_factory, domain, settings, bus, model)
-    run_id = await run_to_completion(service, case_ref="case-dispatch-002")
+    run_id = await run_to_completion(service, case_ref="m-sample-2")
 
     detail = await service.get_run_detail(run_id)
     assert detail.run.status == "needs_input" and detail.proposal is None
-    assert detail.needs_input["missing_fields"][0]["field"] == "jobs.j-107.required_skill"
+    assert detail.needs_input["missing_fields"][0]["field"] == "notes"
     assert [e.type for e in await bus.replay(run_id)][-2:] == ["agent_output", "run_finished"]
 
 
 async def test_should_end_with_infeasible_and_blocking_constraints(
     session_factory, domain, settings, bus, seeded
 ) -> None:
-    model = scripted([tool("get_case")], [assistant_message(infeasible_output())])
+    model = scripted([tool("get_meeting")], [assistant_message(infeasible_output())])
     service = make_service(session_factory, domain, settings, bus, model)
-    run_id = await run_to_completion(service, case_ref="case-dispatch-003")
+    run_id = await run_to_completion(service, case_ref="m-sample-2")
 
     detail = await service.get_run_detail(run_id)
     assert detail.run.status == "infeasible"
-    assert {c["rule_id"] for c in detail.infeasible["blocking_constraints"]} == {"skill_match", "daily_capacity"}
+    assert {c["rule_id"] for c in detail.infeasible["blocking_constraints"]} == {"transcript_ready"}
 
 
 async def test_should_reject_a_bad_proposal_then_accept_the_revision(
     session_factory, domain, settings, bus, seeded
 ) -> None:
     model = scripted(
-        [tool("get_case")],
+        [tool("get_meeting")],
+        [tool("read_transcript", {"offset": 0, "limit": 0})],
         [assistant_message(proposal_output(BAD_PLAN))],
         [assistant_message(proposal_output(FULL_PLAN))],
     )
@@ -152,9 +151,9 @@ async def test_should_reject_a_bad_proposal_then_accept_the_revision(
     types = [e.type for e in events]
     assert types[-5:] == ["validation_failed", "revision_started", "agent_output", "proposal_ready", "run_finished"]
     failed = next(e for e in events if e.type == "validation_failed")
-    assert failed.payload["will_revise"] is True and failed.payload["errors"][0]["rule_id"] == "skill_match"
+    assert failed.payload["will_revise"] is True and failed.payload["errors"][0]["rule_id"] == "evidence_exists"
     revision_input = model.calls[-1].input
-    assert any("skill_match" in str(item) for item in revision_input)
+    assert any("evidence_exists" in str(item) for item in revision_input)
 
 
 async def test_should_stop_after_the_bounded_number_of_revisions(
@@ -175,7 +174,7 @@ async def test_should_stop_after_the_bounded_number_of_revisions(
 async def test_should_fail_cleanly_when_the_turn_limit_is_exceeded(
     session_factory, domain, settings, bus, seeded
 ) -> None:
-    model = scripted(*[[tool("lookup_rules", {}, f"c{i}")] for i in range(6)])
+    model = scripted(*[[tool("get_meeting", {}, f"c{i}")] for i in range(6)])
     service = make_service(session_factory, domain, settings, bus, model)
     run_id = await run_to_completion(service, max_turns=2)
 
@@ -190,7 +189,9 @@ async def test_should_record_tool_failures_and_let_the_agent_continue(
     session_factory, domain, settings, bus, seeded
 ) -> None:
     model = scripted(
-        [tool("find_resources", {"skill": None, "on_date": "not-a-date"})],
+        [tool("read_transcript", {"offset": "not-an-integer", "limit": 60})],
+        [tool("get_meeting")],
+        [tool("read_transcript", {"offset": 0, "limit": 0})],
         [assistant_message(proposal_output(FULL_PLAN))],
     )
     service = make_service(session_factory, domain, settings, bus, model)
@@ -200,10 +201,10 @@ async def test_should_record_tool_failures_and_let_the_agent_continue(
     failed = next(e for e in events if e.type == "tool_failed")
     assert (
         failed.payload["error"]["code"] == "invalid_arguments"
-        and failed.payload["label"] == "Checking available workers"
+        and failed.payload["tool"] == "read_transcript"
     )
     detail = await service.get_run_detail(run_id)
-    assert detail.run.status == "proposed" and detail.run.stats.tool_calls == 1
+    assert detail.run.status == "proposed" and detail.run.stats.tool_calls == 3
 
 
 async def test_should_fail_with_timeout_when_the_run_takes_too_long(session_factory, domain, bus, seeded) -> None:
@@ -212,14 +213,14 @@ async def test_should_fail_with_timeout_when_the_run_takes_too_long(session_fact
         await asyncio.sleep(2)
         return {}
 
-    slow_domain = dataclasses.replace(domain, tools=[ToolSpec(name="get_case", label="Slow", fn=slow)])
+    slow_domain = dataclasses.replace(domain, tools=[ToolSpec(name="get_meeting", label="Slow", fn=slow)])
     settings = Settings(agent_run_timeout_seconds=0.2, tool_timeout_seconds=5, openai_model="scripted")
     service = make_service(
         session_factory,
         slow_domain,
         settings,
         bus,
-        scripted([tool("get_case")], [assistant_message(proposal_output(FULL_PLAN))]),
+        scripted([tool("get_meeting")], [assistant_message(proposal_output(FULL_PLAN))]),
     )
     run_id = await run_to_completion(service)
 
@@ -278,10 +279,50 @@ async def test_should_mark_in_flight_runs_as_interrupted_on_startup(session_fact
 
 async def test_should_list_runs_newest_first(session_factory, domain, settings, bus, seeded) -> None:
     service = make_service(session_factory, domain, settings, bus, happy_script())
-    first = await service.create_run(case_ref=CASE, goal=GOAL, input={"planning_start": "2026-09-24"})
-    second = await service.create_run(case_ref=CASE, goal="second", input={"planning_start": "2026-09-24"})
+    first = await service.create_run(case_ref=CASE, goal=GOAL, input={"meeting_date": "2026-09-23"})
+    second = await service.create_run(case_ref=CASE, goal="second", input={"meeting_date": "2026-09-23"})
     runs = await service.list_runs(limit=10)
     assert [r.id for r in runs] == [second.id, first.id]
     assert await service.get_run_detail(uuid.uuid4()) is None
     async with session_factory() as session:
         assert (await session.execute(select(func.count()).select_from(Proposal))).scalar_one() == 0
+
+
+async def test_existing_evidence_ids_without_tool_reads_are_rejected(session_factory, domain, settings, bus, seeded):
+    # A successful earlier run must not authorize evidence access for this run.
+    service = make_service(session_factory, domain, settings, bus, happy_script())
+    assert (await service.get_run_detail(await run_to_completion(service))).run.status == "proposed"
+    no_revisions = settings.model_copy(update={"agent_max_revisions": 0})
+    fabricated = scripted([assistant_message(proposal_output(FULL_PLAN))])
+    service = make_service(session_factory, domain, no_revisions, bus, fabricated)
+    detail = await service.get_run_detail(await run_to_completion(service))
+    assert detail.run.status == "validation_failed"
+    errors = detail.proposals[-1].validation["errors"]
+    assert {c["rule_id"] for c in errors} == {"required_tool_used", "evidence_read"}
+    assert len([c for c in errors if c["rule_id"] == "required_tool_used"]) == 2
+
+
+async def test_partial_transcript_read_does_not_authorize_unread_evidence(session_factory, domain, settings, bus, seeded):
+    model = scripted(
+        [tool("get_meeting")],
+        [tool("read_transcript", {"offset": 0, "limit": 1})],
+        [assistant_message(proposal_output(FULL_PLAN))],
+    )
+    service = make_service(session_factory, domain, settings.model_copy(update={"agent_max_revisions": 0}), bus, model)
+    detail = await service.get_run_detail(await run_to_completion(service))
+    errors = detail.proposals[-1].validation["errors"]
+    assert detail.run.status == "validation_failed"
+    assert {c["rule_id"] for c in errors} == {"evidence_read"}
+    assert {c["action_id"] for c in errors} == {"a2", "a3"}
+
+
+async def test_failed_read_is_not_counted_as_successful_required_tool(session_factory, domain, settings, bus, seeded):
+    model = scripted(
+        [tool("get_meeting")],
+        [tool("read_transcript", {"offset": -1, "limit": 0})],
+        [assistant_message(proposal_output([]))],
+    )
+    service = make_service(session_factory, domain, settings.model_copy(update={"agent_max_revisions": 0}), bus, model)
+    detail = await service.get_run_detail(await run_to_completion(service))
+    assert detail.run.status == "validation_failed"
+    assert [c["rule_id"] for c in detail.proposals[-1].validation["errors"]] == ["required_tool_used"]

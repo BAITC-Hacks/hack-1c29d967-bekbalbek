@@ -4,8 +4,8 @@ from httpx import AsyncClient
 
 from tests.api.conftest import wait_for_run
 
-CASE = "case-dispatch-001"
-BODY = {"case_ref": CASE, "goal": "Assign every open job.", "input": {"planning_start": "2026-09-24"}}
+CASE = "m-sample-1"
+BODY = {"case_ref": CASE, "goal": "Составь протокол.", "input": {"meeting_date": "2026-09-23"}}
 
 
 async def start_run(client: AsyncClient, body: dict | None = None) -> dict:
@@ -20,7 +20,7 @@ async def test_health_should_report_status_without_secrets(client: AsyncClient) 
     body = response.json()
     assert response.status_code == 200
     assert body["status"] == "ok" and body["database"] == "ok" and body["model"] == "scripted"
-    assert body["api_key_configured"] is False and body["domain"]["key"] == "dispatch"
+    assert body["api_key_configured"] is False and body["domain"]["key"] == "protokol"
     assert "sk-" not in response.text
 
 
@@ -28,18 +28,16 @@ async def test_domain_endpoints_should_expose_examples_and_case_views(client: As
     examples = (await client.get("/api/domain/examples")).json()["examples"]
     assert [e["expected_outcome"] for e in examples] == [
         "proposal_ready",
-        "needs_input",
-        "infeasible",
         "proposal_ready",
     ]
     view = await client.get(f"/api/domain/cases/{CASE}")
-    assert view.status_code == 200 and len(view.json()["workers"]) == 4 and len(view.json()["dates"]) == 7
+    assert view.status_code == 200 and len(view.json()["segments"]) == 3 and len(view.json()["speakers"]) == 1
     missing = await client.get("/api/domain/cases/nope")
     assert missing.status_code == 404 and missing.json()["error"]["code"] == "case_not_found"
 
 
 async def test_should_validate_run_requests(client: AsyncClient) -> None:
-    bad_input = await client.post("/api/runs", json={**BODY, "input": {"planning_start": "soon"}})
+    bad_input = await client.post("/api/runs", json={**BODY, "input": {"meeting_date": "soon"}})
     assert bad_input.status_code == 422
     unknown_case = await client.post("/api/runs", json={**BODY, "case_ref": "nope"})
     assert unknown_case.status_code == 404 and unknown_case.json()["error"]["code"] == "case_not_found"
@@ -54,7 +52,7 @@ async def test_should_run_the_agent_in_the_background_and_expose_the_result(clie
 
     detail = (await client.get(f"/api/runs/{created.json()['run']['id']}")).json()
     assert detail["run"]["status"] == "proposed" and detail["proposal"]["validation"]["ok"] is True
-    assert detail["run"]["stats"]["tool_calls"] == 4 and detail["snapshot_before"] is not None
+    assert detail["run"]["stats"]["tool_calls"] >= 2 and detail["snapshot_before"] is not None
     assert len(detail["messages"]) >= 5
 
     listed = (await client.get("/api/runs")).json()["runs"]
@@ -98,21 +96,25 @@ async def test_should_apply_once_and_reject_duplicates_and_bad_versions(client: 
     applied = await client.post(f"/api/runs/{run_id}/apply", json={"proposal_id": proposal_id, "version": 1})
     assert applied.status_code == 200
     assert applied.json()["application"]["status"] == "verified" and applied.json()["run"]["status"] == "verified"
-    assert len(applied.json()["application"]["actions"]) == 6
+    assert len(applied.json()["application"]["actions"]) == 3
 
     again = await client.post(f"/api/runs/{run_id}/apply", json={"proposal_id": proposal_id, "version": 1})
     assert again.status_code == 409 and again.json()["error"]["code"] == "duplicate_apply"
 
     view = (await client.get(f"/api/domain/cases/{CASE}")).json()
-    assert len(view["assignments"]) == 8 and all(j["status"] == "assigned" for j in view["jobs"])
+    assert len(view["action_items"]) == 3 and view["protocol"] is not None
     missing = await client.post(f"/api/runs/{uuid.uuid4()}/apply", json={"proposal_id": proposal_id, "version": 1})
     assert missing.status_code == 404
 
 
-async def test_should_reject_stale_proposals_after_a_demo_change(client: AsyncClient) -> None:
+async def test_should_reject_stale_proposals_after_transcript_change(client: AsyncClient, session_factory) -> None:
     detail = await start_run(client)
-    patched = await client.patch("/api/domain/workers/w-chen", json={"unavailable_dates": ["2026-09-24", "2026-09-25"]})
-    assert patched.status_code == 200 and patched.json()["worker"]["unavailable_dates"] == ["2026-09-24", "2026-09-25"]
+    from sqlalchemy import delete
+
+    from app.domain.models import MeetingSegment
+
+    async with session_factory() as session, session.begin():
+        await session.execute(delete(MeetingSegment).where(MeetingSegment.id == 1))
 
     rejected = await client.post(
         f"/api/runs/{detail['run']['id']}/apply", json={"proposal_id": detail["proposal"]["id"], "version": 1}
@@ -130,33 +132,29 @@ async def test_reset_should_restore_the_sample_dataset(client: AsyncClient) -> N
         f"/api/runs/{detail['run']['id']}/apply", json={"proposal_id": detail["proposal"]["id"], "version": 1}
     )
     reset = await client.post("/api/domain/reset")
-    assert reset.status_code == 200 and reset.json()["seeded"]["assignments"] == 2
+    assert reset.status_code == 200 and reset.json()["seeded"]["meetings"] == 2
     view = (await client.get(f"/api/domain/cases/{CASE}")).json()
-    assert len(view["assignments"]) == 2
+    assert view["action_items"] == [] and view["protocol"] is None
 
 
-async def test_should_expose_changed_conditions_as_a_different_input(client: AsyncClient) -> None:
-    detail = await start_run(
-        client, {**BODY, "input": {"planning_start": "2026-09-24", "capacity_overrides": {"w-chen": 4}}}
-    )
+async def test_should_preserve_meeting_notes_as_a_different_input(client: AsyncClient) -> None:
+    detail = await start_run(client, {**BODY, "input": {"meeting_date": "2026-09-23", "notes": "Уточнить сроки"}})
     baseline = await start_run(client)
-    assert detail["run"]["input"]["capacity_overrides"] == {"w-chen": 4}
+    assert detail["run"]["input"]["notes"] == "Уточнить сроки"
+    assert baseline["run"]["input"]["notes"] is None
     assert detail["run"]["status"] == "proposed" and baseline["run"]["status"] == "proposed"
-    moved = next(a for a in detail["proposal"]["content"]["actions"] if a["job_id"] == "j-104")
-    original = next(a for a in baseline["proposal"]["content"]["actions"] if a["job_id"] == "j-104")
-    assert moved["worker_id"] != original["worker_id"]
     assert all(c["status"] != "fail" for c in detail["proposal"]["validation"]["checks"])
 
 
 async def test_should_reject_oversized_request_bodies(client: AsyncClient) -> None:
-    huge = {**BODY, "input": {"planning_start": "2026-09-24", "notes": "x" * 1500}, "goal": "g" * 1500}
+    huge = {**BODY, "input": {"meeting_date": "2026-09-23", "notes": "x" * 1500}, "goal": "g" * 1500}
     padded = {**huge, "padding": "p" * (2 * 1024 * 1024)}
     response = await client.post("/api/runs", json=padded)
     assert response.status_code == 413 and response.json()["error"]["code"] == "payload_too_large"
 
 
-async def test_should_reject_bad_dates_on_the_demo_worker_patch(client: AsyncClient) -> None:
-    response = await client.patch("/api/domain/workers/w-ana", json={"unavailable_dates": ["soon"]})
+async def test_should_reject_empty_speaker_names(client: AsyncClient) -> None:
+    response = await client.patch(f"/api/domain/meetings/{CASE}/speakers/S1", json={"display_name": ""})
     assert response.status_code == 422
     assert (await client.get(f"/api/domain/cases/{CASE}")).status_code == 200
 
