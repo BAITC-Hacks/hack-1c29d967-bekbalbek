@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select, update
 
@@ -165,3 +166,27 @@ async def rename_speaker(meeting_id: str, speaker_id: str, patch: SpeakerPatch, 
     speaker.display_name = name
     await session.commit()
     return {"speaker": row_dict(speaker)}
+
+
+@router.get("/meetings/{meeting_id}/protocol.pdf")
+async def export_pdf(meeting_id: str, session: SessionDep) -> Response:
+    from app.domain import exports
+
+    doc = await exports.build_document(session, meeting_id)
+    return Response(
+        content=exports.to_pdf(doc),
+        media_type="application/pdf",
+        headers={"content-disposition": f'attachment; filename="protocol-{meeting_id}.pdf"'},
+    )
+
+
+@router.get("/meetings/{meeting_id}/protocol.docx")
+async def export_docx(meeting_id: str, session: SessionDep) -> Response:
+    from app.domain import exports
+
+    doc = await exports.build_document(session, meeting_id)
+    return Response(
+        content=exports.to_docx(doc),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"content-disposition": f'attachment; filename="protocol-{meeting_id}.docx"'},
+    )
