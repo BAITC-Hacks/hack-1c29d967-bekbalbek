@@ -40,14 +40,18 @@ async function installMeetingApi(page: Page) {
     if (/\/protocol\.(pdf|docx)$/.test(path)) return route.fulfill({ body: "contract test export", headers: { "content-disposition": "attachment; filename=protocol-test.pdf", "content-type": "application/octet-stream" } });
     if (path.endsWith("/apply")) {
       Object.assign(view, structuredClone(confirmedCaseView));
-      const run = makeRun({ status: "verified" });
+      const run = { ...detail.run, status: "verified" as const };
       const application = { id: "app-1", proposal_id: "p-1", version: 1, status: "verified" as const, actions: [], verification: { ok: true, summary: "Поручения сохранены", checks: [] }, error: null, started_at: "t", finished_at: "t" };
       detail = { ...detail, run, application, snapshot_after: { action_items: 3, protocol_exists: true } };
       runs = [run];
       return send({ run, application });
     }
     if (path === "/api/runs") {
-      if (request.method() === "POST") { runs = [makeRun()]; return send({ run: makeRun({ status: "queued" }) }, 202); }
+      if (request.method() === "POST") {
+        detail = { ...detail, run: makeRun({ ...request.postDataJSON(), status: "proposed" }) };
+        runs = [detail.run];
+        return send({ run: { ...detail.run, status: "queued" } }, 202);
+      }
       return send({ runs });
     }
     if (path.endsWith("/events/list")) return send({ events: happyEvents });
@@ -72,8 +76,16 @@ test("should complete upload, transcription, review, confirmation and export lin
   await page.getByLabel("Имя S1", { exact: true }).fill("Асхат Ерланович");
   await page.getByLabel("Имя S1", { exact: true }).press("Enter");
   await expect(page.getByLabel("Имя S1", { exact: true })).toHaveValue("Асхат Ерланович");
+  await page.getByLabel("Дата для расчёта сроков", { exact: true }).fill("2026-09-25");
+  await page.getByRole("textbox", { name: "Задача для анализа", exact: true }).fill("Проверь сроки и решения");
   await page.getByRole("button", { name: "Сформировать протокол", exact: true }).click();
   await expect(page.getByRole("button", { name: "Подтвердить протокол", exact: true })).toBeDisabled();
+  await expect(page.getByRole("heading", { level: 1, name: examples[0].title })).toBeVisible();
+  await expect(page.getByText("Другие запуски", { exact: true })).toHaveCount(0);
+  const decisions = page.getByRole("region", { name: "Решения совещания" });
+  await expect(decisions.getByRole("listitem")).toHaveCount(proposedDetail.proposal!.content.decisions.length);
+  for (const decision of proposedDetail.proposal!.content.decisions) await expect(decisions.getByText(decision, { exact: true })).toBeVisible();
+  await page.screenshot({ path: "test-results/meeting-proposed.png", fullPage: true });
   await page.getByRole("button", { name: /Гульнара С\. · 2026-09-30/ }).click();
   await expect(page.getByRole("region", { name: "Цитаты" }).getByText(caseView.segments[3].text)).toBeVisible();
   await expect(page.getByTestId("row-104")).toHaveClass(/sel/);

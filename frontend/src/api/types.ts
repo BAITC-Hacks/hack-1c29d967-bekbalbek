@@ -41,7 +41,7 @@ export interface ValidationCheck {
 export interface ValidationReport { ok: boolean; checks: ValidationCheck[]; errors: ValidationCheck[] }
 export type ProposalStatus = "validated" | "rejected" | "superseded" | "applied" | "stale";
 export interface ProposalRecord {
-  id: string; run_id: string; version: number; status: ProposalStatus; content: Proposal; validation: ValidationReport;
+  id: string; run_id: string; version: number; status: ProposalStatus; content: ProtocolProposal; validation: ValidationReport;
   basis_fingerprint: string; created_at: string;
 }
 

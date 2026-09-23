@@ -35,6 +35,7 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   const [examples, setExamples] = useState<ExampleCase[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [caseView, setCaseView] = useState<CaseView | null>(null);
+  const [caseLoadError, setCaseLoadError] = useState<{ ref: string; message: string } | null>(null);
   const [dark, setDark] = useState(readTheme);
   const [toast, setToast] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
@@ -56,10 +57,14 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   const loadCaseView = useCallback(
     (ref: string) => {
       const requestId = ++caseRequest.current;
-      return api.caseView(ref).then((result) => { if (requestId === caseRequest.current) setCaseView(result); })
-        .catch((error: unknown) => { if (requestId === caseRequest.current) notify(`Не удалось загрузить совещание: ${describe(error)}`); });
+      return api.caseView(ref).then((result) => {
+        if (requestId === caseRequest.current) { setCaseView(result); setCaseLoadError(null); }
+      })
+        .catch((error: unknown) => {
+          if (requestId === caseRequest.current) setCaseLoadError({ ref, message: `Не удалось загрузить совещание: ${describe(error)}` });
+        });
     },
-    [api, notify],
+    [api],
   );
 
   const navigate = useCallback((next: Route) => {
@@ -99,6 +104,9 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   useEffect(() => { if (caseRef) void loadCaseView(caseRef); }, [caseRef, phase, loadCaseView]);
 
   const view = caseView && caseView.case_ref === caseRef ? caseView : null;
+  const startBlockedReason = caseLoadError?.ref === caseRef ? caseLoadError.message
+    : !view ? "Загружаем сведения о совещании…"
+    : view.meeting.status === "ready" ? null : "Сначала транскрибируйте запись и дождитесь готовности стенограммы.";
   const proposal = detail?.proposal ?? null;
   const selectedChange = changeSelection && changeSelection.runId === detail?.run.id ? changeSelection.changeId : null;
   const selectChange = (changeId: string | null) => setChangeSelection(changeId && detail ? { runId: detail.run.id, changeId } : null);
@@ -118,13 +126,13 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
   }, [api, caseRef, loadCaseView, notify]);
 
   const startRun = useCallback(async (request: CreateRunRequest) => {
-    if (view?.meeting.status !== "ready") { notify("Сначала дождитесь готовности стенограммы"); return; }
+    if (startBlockedReason) { notify(startBlockedReason); return; }
     const run = await start(request);
     if (!run) return;
     requestedRunId.current = run.id;
     navigate({ kind: "run", id: run.id });
     void loadRuns();
-  }, [start, navigate, loadRuns, view, notify]);
+  }, [start, navigate, loadRuns, startBlockedReason, notify]);
 
   const rerunSameRequest = useCallback(() => {
     if (detail) void startRun({ case_ref: detail.run.case_ref, goal: detail.run.goal, input: detail.run.input });
@@ -168,7 +176,7 @@ export default function Dashboard({ api, eventSourceFactory, domain }: Props) {
               history={history} activeRunId={detail?.run.id ?? null} onPickRun={(id) => navigate({ kind: "run", id })} />
             <Workspace
               seed={seed}
-              startBlockedReason={view?.meeting.status === "ready" ? null : "Сначала транскрибируйте запись и дождитесь готовности стенограммы."}
+              startBlockedReason={startBlockedReason}
               description={example?.description ?? ""}
               detail={detail}
               phase={phase}

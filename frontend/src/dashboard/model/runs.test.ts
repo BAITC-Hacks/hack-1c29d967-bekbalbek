@@ -2,36 +2,40 @@ import type { ExampleCase } from "../../api/types";
 import { makeRun } from "../../test/fixtures";
 import { exampleForRun, latestRunForExample, orphanRuns, relativeTime, runsForExample } from "./runs";
 
-const example = (id: string, case_ref: string, goal: string, input: Record<string, unknown>): ExampleCase =>
-  ({ id, title: id, description: "", expected_outcome: "proposal_ready", request: { case_ref, goal, input } });
+const example = (id: string, case_ref: string): ExampleCase =>
+  ({ id, title: id, description: "", expected_outcome: "proposal_ready", request: { case_ref, goal: "Составь протокол", input: { meeting_date: "2026-09-23" } } });
 
 describe("runs model", () => {
-  const plain = example("plain", "c1", "go", { planning_start: "2026-09-24" });
-  const reduced = example("reduced", "c1", "go", { planning_start: "2026-09-24", capacity_overrides: { w: 4 } });
-  const examples = [plain, reduced];
+  const first = example("meeting-1", "m1");
+  const second = example("meeting-2", "m2");
+  const examples = [first, second];
   const runs = [
-    makeRun({ id: "a", case_ref: "c1", goal: "go", input: { planning_start: "2026-09-24" }, created_at: "2026-09-24T10:00:00Z" }),
-    makeRun({ id: "b", case_ref: "c1", goal: "go", input: { planning_start: "2026-09-24", job_overrides: { j: { required_skill: "x" } } }, created_at: "2026-09-24T11:00:00Z" }),
-    makeRun({ id: "c", case_ref: "c1", goal: "go", input: { planning_start: "2026-09-24", capacity_overrides: { w: 4 } }, created_at: "2026-09-24T12:00:00Z" }),
-    makeRun({ id: "d", case_ref: "c1", goal: "edited goal", input: { planning_start: "2026-09-24" }, created_at: "2026-09-24T13:00:00Z" }),
-    makeRun({ id: "e", case_ref: "c9", goal: "go", input: {}, created_at: "2026-09-24T14:00:00Z" }),
+    makeRun({ id: "a", ...first.request, created_at: "2026-09-24T10:00:00Z" }),
+    makeRun({ id: "b", ...first.request, input: { meeting_date: "2026-09-25" }, created_at: "2026-09-24T11:00:00Z" }),
+    makeRun({ id: "c", ...second.request, created_at: "2026-09-24T12:00:00Z" }),
+    makeRun({ id: "d", ...first.request, goal: "Выдели решения", input: { meeting_date: "2026-09-26", language: "kk", notes: "Проверь сроки" }, created_at: "2026-09-24T13:00:00Z" }),
+    makeRun({ id: "e", ...first.request, case_ref: "m9", created_at: "2026-09-24T14:00:00Z" }),
   ];
 
-  it("should attach a run to the most specific example whose request it extends", () => {
-    expect(exampleForRun(runs[0], examples)?.id).toBe("plain");
-    expect(exampleForRun(runs[1], examples)?.id).toBe("plain");
-    expect(exampleForRun(runs[2], examples)?.id).toBe("reduced");
-    expect(exampleForRun(runs[3], examples)).toBeNull();
+  it("should keep runs attached to their meeting after the date, goal or other inputs change", () => {
+    for (const run of [runs[0], runs[1], runs[3]]) expect(exampleForRun(run, examples)?.id).toBe(first.id);
   });
 
-  it("should list an example's runs newest first and pick the latest", () => {
-    expect(runsForExample(runs, plain, examples).map((r) => r.id)).toEqual(["b", "a"]);
-    expect(latestRunForExample(runs, reduced, examples)?.id).toBe("c");
-    expect(latestRunForExample(runs, example("none", "c2", "go", {}), examples)).toBeNull();
+  it("should distinguish meetings even when they have identical goals and inputs", () => {
+    expect(exampleForRun(runs[2], examples)?.id).toBe(second.id);
+    expect(exampleForRun(runs[4], examples)).toBeNull();
   });
 
-  it("should list runs that belong to no example as orphans", () => {
-    expect(orphanRuns(runs, examples).map((r) => r.id)).toEqual(["e", "d"]);
+  it("should list a meeting's runs newest first and pick the latest", () => {
+    expect(runsForExample(runs, first, examples).map((r) => r.id)).toEqual(["d", "b", "a"]);
+    expect(latestRunForExample(runs, first, examples)?.id).toBe("d");
+    expect(latestRunForExample(runs, second, examples)?.id).toBe("c");
+    expect(latestRunForExample(runs, example("missing", "m3"), examples)).toBeNull();
+  });
+
+  it("should list only runs whose meeting is absent as orphans", () => {
+    expect(orphanRuns(runs, examples).map((r) => r.id)).toEqual(["e"]);
+    expect(orphanRuns(runs, []).map((r) => r.id)).toEqual(["e", "d", "c", "b", "a"]);
   });
 
   it("should format relative times and clamp the future to now", () => {

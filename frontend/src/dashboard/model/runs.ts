@@ -2,15 +2,9 @@ import type { ExampleCase, Run } from "../../api/types";
 
 const byNewest = (a: Run, b: Run) => b.created_at.localeCompare(a.created_at);
 
-function extendsInput(actual: Record<string, unknown>, base: Record<string, unknown>): boolean {
-  return Object.entries(base).every(([key, value]) => JSON.stringify(actual[key]) === JSON.stringify(value));
-}
-
-// A run belongs to the most specific example whose request it extends (same case, same goal, input superset).
+// Meeting identity stays the same when the analysis goal, date or other inputs change.
 export function exampleForRun(run: Run, examples: ExampleCase[]): ExampleCase | null {
-  return examples
-    .filter((e) => e.request.case_ref === run.case_ref && e.request.goal === run.goal && extendsInput(run.input, e.request.input))
-    .sort((a, b) => Object.keys(b.request.input).length - Object.keys(a.request.input).length)[0] ?? null;
+  return examples.find((example) => example.request.case_ref === run.case_ref) ?? null;
 }
 
 export function runsForExample(runs: Run[], example: ExampleCase, examples: ExampleCase[]): Run[] {

@@ -34,7 +34,7 @@ export interface RunController {
 }
 
 const asApiError = (error: unknown): ApiError =>
-  error instanceof ApiError ? error : new ApiError("unexpected_error", error instanceof Error ? error.message : String(error), 0, error);
+  error instanceof ApiError ? error : new ApiError("unexpected_error", "Произошла непредвиденная ошибка. Повторите попытку.", 0, error);
 
 function emptyDetail(run: RunDetail["run"]): RunDetail {
   return { run, proposals: [], proposal: null, needs_input: null, infeasible: null, application: null, snapshot_before: null, snapshot_after: null, messages: [] };
@@ -89,7 +89,7 @@ export function useRun(api: Api, eventSourceFactory: EventSourceFactory = defaul
       try {
         event = JSON.parse(raw) as RunEvent;
       } catch {
-        setError(new ApiError("bad_event", "The server sent an event the app could not read; the timeline may be incomplete", 0, raw));
+        setError(new ApiError("bad_event", "Не удалось прочитать событие сервера. Журнал обработки может быть неполным.", 0, raw));
         return;
       }
       setTimeline((previous) => reduceTimeline(previous, event));

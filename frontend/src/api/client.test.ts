@@ -12,11 +12,11 @@ describe("api client", () => {
   it("should post a run request and return the run", async () => {
     const capture = { calls: [] as { url: string; init?: RequestInit }[] };
     const api = createApi(fakeFetch(202, { run: makeRun() }, capture));
-    const run = await api.createRun({ case_ref: "m-sample-1", goal: "g", input: { planning_start: "2026-09-24" } });
+    const run = await api.createRun({ case_ref: "m-sample-1", goal: "g", input: { meeting_date: "2026-09-24" } });
     expect(run.id).toBe("run-1");
     expect(capture.calls[0].url).toBe("/api/runs");
     expect(capture.calls[0].init?.method).toBe("POST");
-    expect(JSON.parse(String(capture.calls[0].init?.body))).toEqual({ case_ref: "m-sample-1", goal: "g", input: { planning_start: "2026-09-24" } });
+    expect(JSON.parse(String(capture.calls[0].init?.body))).toEqual({ case_ref: "m-sample-1", goal: "g", input: { meeting_date: "2026-09-24" } });
   });
 
   it("should turn the error envelope into an ApiError with code and details", async () => {
@@ -29,10 +29,10 @@ describe("api client", () => {
   });
 
   it("should turn FastAPI 422 details into a readable validation error", async () => {
-    const api = createApi(fakeFetch(422, { detail: [{ loc: ["body", "input", "planning_start"], msg: "Input should be a valid date", type: "date" }] }));
+    const api = createApi(fakeFetch(422, { detail: [{ loc: ["body", "input", "meeting_date"], msg: "Input should be a valid date", type: "date" }] }));
     const error = (await api.createRun({ case_ref: "x", goal: "g", input: {} }).catch((e: unknown) => e)) as ApiError;
     expect(error.code).toBe("validation_error");
-    expect(error.message).toContain("input.planning_start");
+    expect(error.message).toContain("input.meeting_date");
     expect(error.message).toContain("valid date");
   });
 

@@ -7,13 +7,12 @@ export type JsonInput = Record<string, unknown>;
 
 export interface DemoPanelProps { api: Pick<Api, "request">; caseView: CaseView | null; onChanged: () => void }
 
-// The contract between the generic dashboard and a domain module. A new business case implements this
-// once (see frontend/src/domain/protokol.ts for the sample) and nothing under src/dashboard changes.
+// Connects the meeting dashboard to protocol tables, action items and transcript evidence.
 export interface DomainAdapter {
   key: string;
-  /** Header of the row-label column in the before/after load table, e.g. "Worker · date". */
+  /** Header of the protocol's before/after comparison column. */
   beforeAfterLabel: string;
-  /** Optional demo-only panel rendered with the request card, e.g. to change data before applying. */
+  /** Meeting upload, transcription and speaker review panel. */
   DemoPanel?: ComponentType<DemoPanelProps>;
   tableFor(view: CaseView): Table;
   changesFor(proposal: Proposal, validation: ValidationReport, view: CaseView): ChangeRow[];

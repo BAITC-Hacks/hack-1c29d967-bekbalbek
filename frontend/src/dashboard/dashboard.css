@@ -145,6 +145,8 @@
 .card-h strong { font-size: 15px; font-weight: 600; }
 .card-p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 20px; }
 .card-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.proposal-decisions { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.proposal-decisions li + li { margin-top: 6px; }
 .request.compact { grid-template-columns: auto 1fr auto; align-items: center; padding: 10px 14px; }
 .request-goal { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

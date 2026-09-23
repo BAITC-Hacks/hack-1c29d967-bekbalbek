@@ -2,8 +2,8 @@ export type WorkspaceKind = "table" | "timeline" | "document";
 
 export interface ChangeRow {
   id: string;
-  label: string;        // e.g. "Order #4821"
-  field: string;        // e.g. "Assigned worker"
+  label: string;        // e.g. "Поручение №1"
+  field: string;        // e.g. "Ответственный"
   from: string;
   to: string;
   checks: { name: string; status: "pass" | "warn" | "fail" }[];

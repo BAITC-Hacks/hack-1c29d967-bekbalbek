@@ -46,6 +46,7 @@ export function Workspace(p: Props) {
   const otherError = p.error && !rejection ? p.error : null;
   const lastProposal = detail?.proposals[detail.proposals.length - 1] ?? null;
   const busyPhase = phase === "analyzing" || phase === "applying" || phase === "applied";
+  const decisions = detail?.proposal?.content.decisions ?? [];
 
   return (
     <main className="center">
@@ -71,6 +72,12 @@ export function Workspace(p: Props) {
         />
       )}
       {detail && phase === "verified" && <VerifiedBanner count={detail.application?.actions.length || p.changes.length} summary={detail.application?.verification?.summary ?? ""} collapsed={false} />}
+      {phase === "proposed" && decisions.length > 0 && (
+        <section className="card" aria-label="Решения совещания">
+          <h3 className="card-p">Решения совещания</h3>
+          <ul className="proposal-decisions">{decisions.map((decision, index) => <li key={index}>{decision}</li>)}</ul>
+        </section>
+      )}
       <div className={`ws ${busyPhase ? "ws-analyzing" : ""}`} aria-busy={busyPhase}>
         {p.table ? <ChangesTable table={p.table} changes={p.changes} phase={phase} selected={p.selectedChange} onSelect={p.onSelectChange} /> : <TableSkeleton />}
       </div>

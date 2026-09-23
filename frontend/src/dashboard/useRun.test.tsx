@@ -23,7 +23,7 @@ describe("useRun", () => {
     const { api, calls } = createFakeApi();
     const { result } = renderHook(() => useRun(api, fakeEventSourceFactory));
 
-    await act(() => result.current.start({ case_ref: "m-sample-1", goal: "g", input: { planning_start: "2026-09-24" } }));
+    await act(() => result.current.start({ case_ref: "m-sample-1", goal: "g", input: { meeting_date: "2026-09-24" } }));
     expect(calls.createRun).toHaveLength(1);
     expect(FakeEventSource.last().url).toBe("/api/runs/run-1/events");
     expect(result.current.phase).toBe("analyzing");

@@ -21,7 +21,7 @@ async function toApiError(response: Response): Promise<ApiError> {
     const message = items.map((d) => `${d.loc.filter((part) => part !== "body").join(".")}: ${d.msg}`).join("; ");
     return new ApiError("validation_error", message, response.status, items);
   }
-  return new ApiError("http_error", `Request failed with HTTP ${response.status}`, response.status, body);
+  return new ApiError("http_error", `Ошибка запроса к серверу (HTTP ${response.status}).`, response.status, body);
 }
 
 export function createApi(fetchImpl: typeof fetch = (input, init) => fetch(input, init), base = "/api") {
@@ -30,13 +30,13 @@ export function createApi(fetchImpl: typeof fetch = (input, init) => fetch(input
     try {
       response = await fetchImpl(`${base}${path}`, { ...init, headers: { "content-type": "application/json", ...(init?.headers ?? {}) } });
     } catch (cause) {
-      throw new ApiError("network_error", "Could not reach the backend. Is the API running?", 0, cause);
+      throw new ApiError("network_error", "Не удалось связаться с сервером. Проверьте подключение и запуск сервера.", 0, cause);
     }
     if (!response.ok) throw await toApiError(response);
     try {
       return (await response.json()) as T;
     } catch (cause) {
-      throw new ApiError("bad_response", "The backend returned a response the app could not read", response.status, cause);
+      throw new ApiError("bad_response", "Не удалось прочитать ответ сервера. Повторите попытку.", response.status, cause);
     }
   }
   const post = <T>(path: string, body: unknown) => request<T>(path, { method: "POST", body: JSON.stringify(body) });

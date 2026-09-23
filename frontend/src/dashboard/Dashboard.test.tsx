@@ -4,7 +4,7 @@ import { ApiError } from "../api/client";
 import { protokolDomain } from "../domain/protokol";
 import { createFakeApi } from "../test/fakeApi";
 import { FakeEventSource, fakeEventSourceFactory } from "../test/fakeEventSource";
-import { caseView, examples, applyEvents, happyEvents, infeasibleDetail, makeRun, needsInputDetail } from "../test/fixtures";
+import { caseView, examples, applyEvents, happyEvents, infeasibleDetail, makeRun, needsInputDetail, proposedDetail } from "../test/fixtures";
 import Dashboard from "./Dashboard";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -18,6 +18,58 @@ function renderDashboard(options: Parameters<typeof createFakeApi>[0] = {}) {
 }
 
 describe("Dashboard", () => {
+  it("should retain the meeting title and history after editing analysis parameters", async () => {
+    const user = userEvent.setup();
+    const runs: ReturnType<typeof makeRun>[] = [];
+    const fake = renderDashboard({ runs, createRun: (request) => {
+      const run = makeRun({ ...request, status: "queued", outcome: null });
+      runs.push(run);
+      return run;
+    } });
+    vi.spyOn(fake.api, "listRuns").mockImplementation(async () => [...runs]);
+    await user.click(await screen.findByText(examples[0].title));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Сформировать протокол" })).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("Дата для расчёта сроков"), { target: { value: "2026-09-25" } });
+    await user.clear(screen.getByLabelText("Задача для анализа"));
+    await user.type(screen.getByLabelText("Задача для анализа"), "Проверь сроки и решения");
+    await user.click(screen.getByRole("button", { name: "Сформировать протокол" }));
+    expect(fake.calls.createRun[0].input.meeting_date).toBe("2026-09-25");
+    expect(window.location.hash).toBe("#/app/run/run-1");
+    expect(screen.getByRole("heading", { level: 1, name: examples[0].title })).toBeInTheDocument();
+    expect(screen.queryByText("Другие запуски")).not.toBeInTheDocument();
+    expect(await screen.findByLabelText("История анализа")).toBeInTheDocument();
+  });
+
+  it("should show the real meeting-load error and keep generation disabled", async () => {
+    const user = userEvent.setup();
+    const fake = renderDashboard({ runs: [] });
+    vi.spyOn(fake.api, "caseView").mockRejectedValue(new ApiError("http_error", "Ошибка запроса к серверу (HTTP 503).", 503));
+    await user.click(await screen.findByText(examples[0].title));
+    expect(await screen.findByText("Не удалось загрузить совещание: Ошибка запроса к серверу (HTTP 503).")).toBeInTheDocument();
+    expect(screen.queryByText(/Сначала транскрибируйте/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Сформировать протокол" })).toBeDisabled();
+    expect(fake.calls.createRun).toHaveLength(0);
+  });
+
+  it("should display all proposed decisions before the user confirms the protocol", async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+    await user.click(await screen.findByText(/Составь протокол совещания\./));
+    const review = await screen.findByRole("region", { name: "Решения совещания" });
+    for (const decision of proposedDetail.proposal!.content.decisions) expect(within(review).getByText(decision)).toBeInTheDocument();
+    expect(within(review).getAllByRole("listitem")).toHaveLength(proposedDetail.proposal!.content.decisions.length);
+    expect(screen.getByRole("button", { name: /подтвердить протокол/i })).toBeInTheDocument();
+  });
+
+  it("should not show an empty decisions section", async () => {
+    const user = userEvent.setup();
+    const detail = structuredClone(proposedDetail);
+    detail.proposal!.content.decisions = [];
+    renderDashboard({ details: { "run-1": detail } });
+    await user.click(await screen.findByText(/Составь протокол совещания\./));
+    await screen.findByRole("button", { name: /подтвердить протокол/i });
+    expect(screen.queryByRole("region", { name: "Решения совещания" })).not.toBeInTheDocument();
+  });
   it("should expose upload on the empty dashboard and refresh the new meeting without reloading", async () => {
     const user = userEvent.setup();
     const meetings = [] as typeof examples;
@@ -66,6 +118,7 @@ describe("Dashboard", () => {
 
     act(() => FakeEventSource.last().emitAll(applyEvents));
     expect(await screen.findByText(/Сохранено и проверено/i)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Решения совещания" })).not.toBeInTheDocument();
     expect(await screen.findByText(/До → после/i)).toBeInTheDocument();
     expect(await screen.findByRole("link", { name: "Скачать PDF" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Скачать DOCX" })).toBeInTheDocument();
@@ -74,7 +127,7 @@ describe("Dashboard", () => {
   it("should show the missing fields as a form and continue with the supplied values", async () => {
     const user = userEvent.setup();
     const fake = renderDashboard({ details: { "run-2": needsInputDetail }, events: { "run-2": [] } });
-    await user.click(await screen.findByRole("button", { name: /Подготовь протокол оперативного совещания.*m-sample-2/ }));
+    await user.click(await screen.findByRole("button", { name: new RegExp(examples[1].title) }));
     const input = await screen.findByLabelText("meeting_date");
     await user.type(input, "2026-09-23");
     await user.click(screen.getByRole("button", { name: /продолжить/i }));
