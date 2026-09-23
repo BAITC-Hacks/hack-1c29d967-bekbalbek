@@ -72,20 +72,21 @@ backend/models/
 
 ### Docker: без Ollama
 
-Нужны Docker Engine с Compose, `make`, `curl`, свободные порты 5433 и 8080. Для CLI-проверки нужен `jq`. При первой сборке скачиваются образы и зависимости; требуется место для весов и Python/CUDA-библиотек, даже при CPU-обработке.
+Нужны Docker Engine с Compose, `make`, `curl`, свободные порты 5433 и 8080. Для CLI-проверки нужны Bash, `jq` и `od` (coreutils). При первой сборке скачиваются образы и зависимости; требуется место для весов и Python/CUDA-библиотек, даже при CPU-обработке.
 
 ```bash
 cp .env.example .env
+mkdir -p backend/media
 # До запуска разместите веса речи в backend/models/.
 OPENAI_MODEL=scripted:auto make stack
 curl -fsS http://localhost:8080/api/health
 ```
 
-Откройте `http://localhost:8080/#/app`. Ожидается `model: scripted:auto`, `models_present: true`, `provenance.enabled: true`. Compose монтирует локальные `models`, `media`, `samples`; ASR работает на CPU. Адрес `http://localhost:11434/v1` нужен для проверки конфигурации при запуске; scripted-режим к нему не обращается. Явное значение `OPENAI_MODEL` исключает влияние настроек оболочки.
+Откройте `http://localhost:8080/#/app`. Ожидается `model: scripted:auto`, `models_present: true`, `provenance.enabled: true`. Compose монтирует локальные `models`, `media`, `samples`; ASR работает на CPU. Адрес `http://localhost:11434/v1` нужен для проверки конфигурации при запуске; scripted-режим к нему не обращается. Явное значение `OPENAI_MODEL` исключает влияние настроек оболочки. Создание `backend/media` до запуска контейнера сохраняет права текущего пользователя для файлов CLI-проверки.
 
 ### Dev: локальный Qwen
 
-Нужны Python 3.12, `uv`, Node 22, `pnpm`, ffmpeg, Docker для PostgreSQL и Ollama на этой же машине. Установите в Ollama `qwen3.5:4b`, затем:
+Нужны Python 3.12, `uv`, Node 22.13+, `pnpm`, ffmpeg, Docker для PostgreSQL и Ollama на этой же машине. Установите в Ollama `qwen3.5:4b`, затем:
 
 ```bash
 make install
@@ -122,7 +123,7 @@ API=http://localhost:8080 make smoke
 
 ### Затем: живая модель
 
-Выполните `make llm`, запустите dev API с `OPENAI_MODEL=protokol-qwen3.5:4b`, проверьте `/api/health` на порту 8000 и повторите шаги в интерфейсе на 5173. CLI: `API=http://localhost:8000 make smoke`. Проверенный Qwen-прогон записи №1 сформировал 11 строк за 30,5 секунды после готовой стенограммы, подтвердился и экспортировался. Число строк может меняться при новом запуске.
+Выполните `make llm`, запустите dev API с `OPENAI_MODEL=protokol-qwen3.5:4b`, проверьте `/api/health` на порту 8000 и повторите шаги в интерфейсе на 5173. CLI: `API=http://localhost:8000 make smoke`. Проверенный Qwen-прогон записи №1 сформировал 11 строк за 30,5 секунды после готовой стенограммы. Сохранены оба состояния одного запуска: [JSON предложения](evaluation/organizer/qwen-live-verified.json) содержит `detail.run.status = proposed` (имя файла не означает подтверждение), а [полный RunDetail после подтверждения](evaluation/organizer/results/qwen-live-confirmed.json), повторно полученный через API после восстановления исходной БД, содержит `run.status = verified`, `application.status = verified` и проверки сохранения в `application.verification`. Предложение используется для оценки извлечения; второй файл подтверждает применение. Экспорт дополнительно проверен в Docker-сценарии выше. Число строк может меняться при новом запуске.
 
 Ручная оценка двух организаторских записей: **10/10 и 6/6 групп поручений имеют соответствие**, создано **11 и 8 строк**. Это покрытие групп, не «100% точность»: ошибки перечислены в [accuracy-summary.md](evaluation/organizer/accuracy-summary.md).
 
@@ -144,6 +145,19 @@ pnpm build
 ```
 
 Последняя проверка backend: **199 passed**; Ruff и ESLint чистые. Предыдущий прогон дал 222 passed; после удаления Docker-подключения к LLM удалены и 23 соответствующие проверки. Тестам API нужна PostgreSQL на 5433 (отдельная `agent_workspace_test`); тесты с маркером `models` требуют локальных весов и без них пропускаются. Проверка без ASR: `uv run pytest -q -m 'not models'`.
+
+### Проверка чистого клона — выполнена
+
+23 сентября проверен коммит `94f6888` в `/tmp/protokol-check`: отдельный Docker-проект `protokol-check`, новая база `protokol-check_pgdata`, скопированные локальные веса. `make stack` завершился успешно; health показал `scripted:auto`, `models_present: true`, включённую защиту и ноль блокировок. Новый smoke-скрипт загрузил запись №2, распознал её за **455 секунд**, подтвердил одно поручение (`verified`) и скачал PDF (54 281 байт, 2 страницы) и DOCX (39 681 байт, корректный архив). Затем `git pull --rebase`, `pnpm install --frozen-lockfile`, `pnpm build` и `pnpm lint` прошли в клоне. Это полный прогон из чистого checkout и новой БД; веса и кэш Docker были локальными.
+
+При повторной проверке на той же машине сначала остановите первый стек командой `docker compose --profile app down` (без удаления томов): контейнеры и порты двух экземпляров совпадают. Из чистого клона с размещёнными весами выполните:
+
+```bash
+cp .env.example .env
+mkdir -p backend/media
+COMPOSE_PROJECT_NAME=protokol-check OPENAI_MODEL=scripted:auto make stack
+API=http://localhost:8080 make smoke
+```
 
 ## Данные и интеграции
 
