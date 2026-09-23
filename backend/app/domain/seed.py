@@ -2,7 +2,6 @@ from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_settings
 from app.domain.models import Meeting
 
 SAMPLES = [
@@ -13,14 +12,16 @@ SAMPLES = [
 
 async def seed(session: AsyncSession) -> dict[str, int]:
     for meeting_id, title, filename in SAMPLES:
-        if await session.get(Meeting, meeting_id) is not None:
+        existing = await session.get(Meeting, meeting_id)
+        if existing is not None:
+            existing.audio_path = f"samples/{filename}"
             continue
         session.add(
             Meeting(
                 id=meeting_id,
                 title=title,
                 meeting_date=date(2026, 9, 23),
-                audio_path=str(get_settings().samples_dir / filename),
+                audio_path=f"samples/{filename}",
                 status="uploaded",
             )
         )

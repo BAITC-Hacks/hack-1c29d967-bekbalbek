@@ -1,0 +1,41 @@
+{
+  "checked_at": "2026-09-23T16:40:00+05:00",
+  "path": "Docker scripted:auto on localhost:8080",
+  "sample": "backend/samples/sovechanie_2.mp3",
+  "sample_sha256": "b7a42833d0691b99af300a24c7dcdeaf05378355633fb867ef6bfc9e2a8f8f46",
+  "upload_http_status": 202,
+  "transcription_seconds": 472,
+  "transcription_status": "ready",
+  "segments": 22,
+  "run_id": "13e52231-7a03-4887-91ae-8599ab2375b2",
+  "proposal_status": "proposed",
+  "application_status": "verified",
+  "actions": 1,
+  "pdf_bytes": 53872,
+  "pdf_sha256": "63ff2fbdbc71f2401e54973dbe3ce7ee5a5367ea9bc960e8ee3316059d367944",
+  "health": {
+    "status": "ok",
+    "database": "ok",
+    "model": "scripted:auto",
+    "api_key_configured": true,
+    "domain": {
+      "key": "protokol",
+      "title": "Протокол совещания"
+    },
+    "active_runs": 0,
+    "version": "0.1.0",
+    "provenance": {
+      "enabled": true,
+      "blocked_external_connections": 0
+    },
+    "llm_endpoint": "http://localhost:11434/v1",
+    "stt_device": "cpu",
+    "models_present": true
+  },
+  "validation": {
+    "backend_tests_passed": 199,
+    "ruff": "passed",
+    "frontend_eslint": "passed"
+  },
+  "timing_note": "CPU wall time includes API polling; backend tests ran concurrently for part of transcription. No LLM used."
+}

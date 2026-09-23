@@ -3,73 +3,6 @@ revision = 3
 requires-python = "==3.12.*"
 
 [[package]]
-name = "agent-workspace-backend"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "alembic" },
-    { name = "asyncpg" },
-    { name = "ctranslate2" },
-    { name = "fastapi" },
-    { name = "faster-whisper" },
-    { name = "nvidia-cublas-cu12" },
-    { name = "nvidia-cuda-nvrtc-cu12" },
-    { name = "nvidia-cudnn-cu12" },
-    { name = "onnxruntime" },
-    { name = "openai-agents" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-docx" },
-    { name = "python-multipart" },
-    { name = "reportlab" },
-    { name = "sherpa-onnx" },
-    { name = "sherpa-onnx-core" },
-    { name = "sqlalchemy", extra = ["asyncio"] },
-    { name = "sse-starlette" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "httpx" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = "==1.20.0" },
-    { name = "asyncpg", specifier = "==0.31.0" },
-    { name = "ctranslate2", specifier = "==4.8.2" },
-    { name = "fastapi", specifier = "==0.141.1" },
-    { name = "faster-whisper", specifier = "==1.2.1" },
-    { name = "nvidia-cublas-cu12", specifier = "==12.9.2.10" },
-    { name = "nvidia-cuda-nvrtc-cu12", specifier = "==12.9.86" },
-    { name = "nvidia-cudnn-cu12", specifier = "==9.26.0.51" },
-    { name = "onnxruntime", specifier = "==1.30.0" },
-    { name = "openai-agents", specifier = "==0.22.3" },
-    { name = "pydantic", specifier = "==2.13.5" },
-    { name = "pydantic-settings", specifier = "==2.15.0" },
-    { name = "python-docx", specifier = "==1.2.0" },
-    { name = "python-multipart", specifier = "==0.0.32" },
-    { name = "reportlab", specifier = "==5.0.1" },
-    { name = "sherpa-onnx", specifier = "==1.13.8" },
-    { name = "sherpa-onnx-core", specifier = "==1.13.8" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.54" },
-    { name = "sse-starlette", specifier = "==3.4.11" },
-    { name = "uvicorn", extras = ["standard"], specifier = "==0.53.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "httpx", specifier = "==0.28.1" },
-    { name = "pytest", specifier = "==9.1.1" },
-    { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "ruff", specifier = "==0.15.4" },
-]
-
-[[package]]
 name = "alembic"
 version = "1.20.0"
 source = { registry = "https://pypi.org/simple" }
@@ -851,6 +784,73 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fc/1b/dcc64f358fcb51811b58ae40b3d28f820725f116d86487cc20bd4b130701/protobuf-7.36.2-cp310-abi3-win32.whl", hash = "sha256:912c1221170e16c08d1f086762f563dd61ff83c18b5fa6652952dfaded66f728", size = 442998, upload-time = "2026-09-17T20:07:55.826Z" },
     { url = "https://files.pythonhosted.org/packages/8a/55/b77bda4e5e5f5971fb51b07663694690e9afdb9402136c16a522bd621cad/protobuf-7.36.2-cp310-abi3-win_amd64.whl", hash = "sha256:a300819d441e078a5608c0d3c709796bb548136058fda017ae51d425b44fd353", size = 456514, upload-time = "2026-09-17T20:07:57.188Z" },
     { url = "https://files.pythonhosted.org/packages/e4/04/d52c7016b04b6c5108f26691f9d33ec82a9b65d041f1a9c771137693d618/protobuf-7.36.2-py3-none-any.whl", hash = "sha256:bdb3a345d48db958e6ce1f18e508beb0cc981d64f24088427549c866cd039f1e", size = 179806, upload-time = "2026-09-17T20:07:58.211Z" },
+]
+
+[[package]]
+name = "protokol-backend"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "alembic" },
+    { name = "asyncpg" },
+    { name = "ctranslate2" },
+    { name = "fastapi" },
+    { name = "faster-whisper" },
+    { name = "nvidia-cublas-cu12" },
+    { name = "nvidia-cuda-nvrtc-cu12" },
+    { name = "nvidia-cudnn-cu12" },
+    { name = "onnxruntime" },
+    { name = "openai-agents" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-docx" },
+    { name = "python-multipart" },
+    { name = "reportlab" },
+    { name = "sherpa-onnx" },
+    { name = "sherpa-onnx-core" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "sse-starlette" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = "==1.20.0" },
+    { name = "asyncpg", specifier = "==0.31.0" },
+    { name = "ctranslate2", specifier = "==4.8.2" },
+    { name = "fastapi", specifier = "==0.141.1" },
+    { name = "faster-whisper", specifier = "==1.2.1" },
+    { name = "nvidia-cublas-cu12", specifier = "==12.9.2.10" },
+    { name = "nvidia-cuda-nvrtc-cu12", specifier = "==12.9.86" },
+    { name = "nvidia-cudnn-cu12", specifier = "==9.26.0.51" },
+    { name = "onnxruntime", specifier = "==1.30.0" },
+    { name = "openai-agents", specifier = "==0.22.3" },
+    { name = "pydantic", specifier = "==2.13.5" },
+    { name = "pydantic-settings", specifier = "==2.15.0" },
+    { name = "python-docx", specifier = "==1.2.0" },
+    { name = "python-multipart", specifier = "==0.0.32" },
+    { name = "reportlab", specifier = "==5.0.1" },
+    { name = "sherpa-onnx", specifier = "==1.13.8" },
+    { name = "sherpa-onnx-core", specifier = "==1.13.8" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.54" },
+    { name = "sse-starlette", specifier = "==3.4.11" },
+    { name = "uvicorn", extras = ["standard"], specifier = "==0.53.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = "==0.28.1" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "pytest-asyncio", specifier = "==1.4.0" },
+    { name = "ruff", specifier = "==0.15.4" },
 ]
 
 [[package]]

@@ -29,6 +29,7 @@ async def test_upload_creates_meeting(client):
     assert response.status_code == 202, response.text
     meeting = response.json()["meeting"]
     assert meeting["status"] == "uploaded" and meeting["id"].startswith("m-")
+    assert meeting["audio_path"] == f"media/{meeting['id']}.wav"
     view = (await client.get(f"/api/domain/meetings/{meeting['id']}")).json()
     assert view["segments"] == [] and view["protocol"] is None
     assert view["meeting"]["meeting_date"] == "2026-09-23"

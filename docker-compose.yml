@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16
-    container_name: agent-workspace-db
+    container_name: protokol-db
     environment:
       POSTGRES_USER: agent
       POSTGRES_PASSWORD: agent
@@ -19,21 +19,28 @@ services:
 
   api:
     build: ./backend
-    container_name: agent-workspace-api
+    container_name: protokol-api
     profiles: ["app"]
     environment:
       DATABASE_URL: postgresql+asyncpg://agent:agent@db:5432/agent_workspace
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: http://localhost:11434/v1
+      OPENAI_API_KEY: ollama
       OPENAI_MODEL: ${OPENAI_MODEL:-scripted:auto}
+      STT_DEVICE: cpu
+      PROVENANCE_GUARD: "1"
       CORS_ORIGINS: http://localhost:8080
       SEED_ON_START: ${SEED_ON_START:-1}
+    volumes:
+      - ./backend/models:/app/models:ro
+      - ./backend/media:/app/media
+      - ./backend/samples:/app/samples:ro
     depends_on:
       db:
         condition: service_healthy
 
   web:
     build: ./frontend
-    container_name: agent-workspace-web
+    container_name: protokol-web
     profiles: ["app"]
     ports:
       - "8080:80"

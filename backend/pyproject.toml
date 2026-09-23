@@ -1,7 +1,7 @@
 [project]
-name = "agent-workspace-backend"
+name = "protokol-backend"
 version = "0.1.0"
-description = "Reusable FastAPI + OpenAI Agents SDK foundation with a replaceable domain module"
+description = "Local meeting transcription, evidence-backed protocols and document export"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "openai-agents==0.22.3",

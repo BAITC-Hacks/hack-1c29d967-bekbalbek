@@ -91,7 +91,7 @@ async def upload_meeting(
         if not size:
             raise HTTPException(422, "Запись пуста")
         meeting = Meeting(
-            id=meeting_id, title=title, meeting_date=meeting_date, audio_path=str(path), status="uploaded"
+            id=meeting_id, title=title, meeting_date=meeting_date, audio_path=f"media/{path.name}", status="uploaded"
         )
         session.add(meeting)
         await session.commit()
